@@ -1,0 +1,902 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>HighWater — flood readiness that survives the flood</title>
+<meta name="description" content="Offline-first flood readiness: river gauges and NWS alerts when online, cached snapshot and 72-hour kit when nothing works. One file, no server, no sign-in.">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' fill='%23f4efe3'/%3E%3Cpath d='M8 42c8-16 16-16 24 0s16 16 24 0' stroke='%231a150e' stroke-width='7' fill='none'/%3E%3C/svg%3E">
+<style>
+/* ============================================================
+   HIGHWATER — field-manual / instrument-panel design
+   paper + ink, hairline rules, one accent per state.
+   ============================================================ */
+@font-face{
+  font-family:'Archivo Black';
+  src:url(data:font/woff2;base64,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) format('woff2');
+  font-weight:400;font-style:normal;font-display:swap;
+}
+:root{
+  --paper:#f4efe3; --paper2:#ece3cf; --ink:#1a150e;
+  --ink70:rgba(26,21,14,.70); --ink55:rgba(26,21,14,.55);
+  --line:rgba(26,21,14,.25); --line2:rgba(26,21,14,.55);
+  --live:#0a6b3d; --cached:#8f5a00; --red:#a5001f;
+  --amberbg:#f2e3bd; --livebg:#dcebdd; --redbg:#a5001f;
+  --sans:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;
+  --mono:ui-monospace,"SF Mono",Menlo,Consolas,"Liberation Mono",monospace;
+  --disp:'Archivo Black',system-ui,sans-serif;
+}
+body.dark{
+  --paper:#151109; --paper2:#1e180c; --ink:#f0e9d6;
+  --ink70:rgba(240,233,214,.72); --ink55:rgba(240,233,214,.55);
+  --line:rgba(240,233,214,.28); --line2:rgba(240,233,214,.6);
+  --live:#7ecf9f; --cached:#e3b45f; --red:#ff6d7e;
+  --amberbg:#3a2c0a; --livebg:#12290f;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+@media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important;animation:none!important}}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font:17px/1.55 var(--sans);
+  -webkit-text-size-adjust:100%;
+}
+body.big{font-size:20px}
+a{color:inherit; text-underline-offset:3px}
+.wrap{max-width:920px; margin:0 auto; padding:0 20px}
+.skip{position:absolute; left:-999px; top:8px; background:var(--ink); color:var(--paper); padding:10px 16px; z-index:99}
+.skip:focus{left:8px}
+.mono{font-family:var(--mono)}
+button{font:inherit; color:inherit; background:none; border:none; cursor:pointer}
+
+/* ---------- masthead ---------- */
+header.mast{border-bottom:3px solid var(--ink); padding:26px 0 14px}
+.mast-row{display:flex; justify-content:space-between; align-items:flex-start; gap:16px; flex-wrap:wrap}
+.brand{display:flex; align-items:center; gap:14px; min-width:0}
+.mark{font:700 2rem/1 var(--mono); letter-spacing:-.1em; transform:translateY(-3px)}
+h1{font:400 clamp(2.1rem,6vw,3rem)/0.95 var(--disp); margin:0; letter-spacing:.01em}
+.tag{margin:10px 0 0; font-size:1.02rem; color:var(--ink70); max-width:46ch}
+.tools{display:flex; gap:8px; flex:none}
+.tools button{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.08em; text-transform:uppercase;
+  border:1.5px solid var(--ink); padding:9px 13px; min-height:44px; background:var(--paper);
+}
+.tools button:hover{background:var(--paper2)}
+.statusline{display:flex; gap:14px; align-items:baseline; margin-top:14px; flex-wrap:wrap}
+.pill{
+  font-family:var(--mono); font-size:.72rem; letter-spacing:.14em; text-transform:uppercase;
+  border:1.5px solid currentColor; padding:4px 10px 3px; display:inline-flex; gap:8px; align-items:center;
+}
+.pill::before{content:""; width:9px; height:9px; border-radius:50%; background:currentColor}
+.pill.live{color:var(--live)} .pill.cached{color:var(--cached)} .pill.off{color:var(--ink55)}
+#clock{font-size:.8rem; color:var(--ink55); letter-spacing:.04em}
+
+/* ---------- emergency banner ---------- */
+.banner{
+  background:var(--redbg); color:#fff; text-align:center;
+  padding:12px 18px; font-weight:600; letter-spacing:.01em;
+}
+.banner strong{font-weight:800}
+body.dark .banner{color:#1a0505}
+
+/* ---------- sections ---------- */
+section{padding:34px 0 8px; border-bottom:1px solid var(--line)}
+h2{
+  font:400 clamp(1.5rem,4.4vw,2.05rem)/1.1 var(--disp); margin:0 0 6px;
+  display:flex; align-items:baseline; gap:14px;
+}
+h2 .no{font:700 .85rem var(--mono); color:var(--ink55); letter-spacing:.1em; flex:none}
+h2::after{content:""; flex:1; border-top:1px solid var(--line2); transform:translateY(-6px)}
+.lede{color:var(--ink70); max-width:62ch; margin:6px 0 18px}
+.lede q{font-style:italic}
+
+/* ---------- alerts ---------- */
+.alerts{margin:0 0 18px; border:1.5px solid var(--line2)}
+.alert{
+  padding:14px 16px; border-bottom:1px solid var(--line);
+  display:grid; gap:4px;
+}
+.alert:last-child{border-bottom:none}
+.alert .ev{font-weight:800; letter-spacing:.02em}
+.alert .hd{color:var(--ink70)}
+.alert.flood-warning,.alert.flood-emergency{border-left:6px solid var(--red); background:var(--amberbg)}
+.alert .mono{font-size:.75rem; color:var(--ink55)}
+.alerts .none{padding:16px; color:var(--ink70)}
+.alerts .none .mono{display:block; margin-top:4px; font-size:.75rem}
+
+/* ---------- gauges ---------- */
+.gauge{border-top:1px solid var(--line); padding:16px 2px; display:grid; gap:4px 18px;
+  grid-template-columns:minmax(0,1fr) 110px 108px; grid-template-areas:"name spark val" "meta meta val";}
+.gauge:hover{background:var(--paper2)}
+.gname{grid-area:name; font-weight:700; line-height:1.25}
+.gname .sid{display:block; font-family:var(--mono); font-weight:400; font-size:.74rem; color:var(--ink55); letter-spacing:.05em; margin-top:3px}
+.gspark{grid-area:spark; align-self:center; justify-self:start}
+.gval{grid-area:val; text-align:right; font-family:var(--mono); font-weight:700; font-size:1.45rem; line-height:1.1; align-self:center}
+.gval .u{display:block; font-size:.7rem; font-weight:400; letter-spacing:.12em; color:var(--ink55)}
+.gmeta{grid-area:meta; display:flex; gap:14px; flex-wrap:wrap; align-items:baseline; font-size:.8rem; color:var(--ink55)}
+.gmeta .trend{font-weight:700}
+.trend.rising{color:var(--red)} .trend.falling{color:var(--live)}
+.gmeta a{color:var(--ink70)}
+.gdel{margin-left:auto; font-family:var(--mono); font-size:.7rem; letter-spacing:.06em; border-bottom:1px dashed var(--ink55); color:var(--ink55); min-height:44px; padding:0 4px}
+.addg{display:grid; grid-template-columns:minmax(0,1fr) auto; gap:10px; margin:20px 0 6px; max-width:520px}
+.addg label{grid-column:1/-1; font-weight:600}
+.addg input{
+  font:1rem var(--mono); padding:12px 14px; min-height:50px; width:100%;
+  border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+}
+.addg button{font-weight:800; letter-spacing:.04em; border:2px solid var(--ink); padding:0 20px; min-height:50px; background:var(--ink); color:var(--paper)}
+.addg .hint{grid-column:1/-1; font-size:.82rem; color:var(--ink55)}
+.src{font-size:.82rem; color:var(--ink55); margin:14px 0 24px}
+
+/* ---------- kit ---------- */
+.kitbar{display:flex; align-items:center; gap:14px; margin:4px 0 18px}
+.kitbar .bar{flex:1; height:10px; border:1.5px solid var(--ink); position:relative}
+.kitbar .fill{position:absolute; inset:0; right:auto; background:var(--ink); width:0%}
+.kitbar .num{font-family:var(--mono); font-weight:700; font-size:1rem}
+.kitlist{list-style:none; margin:0; padding:0; display:grid; grid-template-columns:1fr 1fr; gap:0 34px}
+.kitlist li{margin:0; border-top:1px solid var(--line)}
+.kitlist label{
+  display:grid; grid-template-columns:26px 1fr; gap:12px; padding:12px 4px 12px 0;
+  min-height:48px; align-items:start; cursor:pointer;
+}
+.kitlist input{appearance:none; width:24px; height:24px; border:2px solid var(--ink); margin:1px 0 0; flex:none; position:relative}
+.kitlist input:checked{background:var(--ink)}
+.kitlist input:checked::after{content:"✕"; position:absolute; inset:0; color:var(--paper); font:700 .9rem/20px var(--mono); text-align:center}
+.kitlist input:focus-visible{outline:3px solid var(--ink); outline-offset:2px}
+.kitlist .it{line-height:1.35}
+.kitlist .cat{display:block; font-family:var(--mono); font-size:.68rem; letter-spacing:.12em; text-transform:uppercase; color:var(--ink55); margin-top:3px}
+.kitlist .cite{color:var(--ink55); font-size:.78rem; white-space:nowrap}
+.kitlist .done .it{color:var(--ink55); text-decoration:line-through 1.5px}
+.row-actions{display:flex; gap:10px; flex-wrap:wrap; margin:16px 0 26px}
+.row-actions button{
+  border:2px solid var(--ink); padding:11px 18px; min-height:48px; font-weight:700; letter-spacing:.02em; background:var(--paper);
+}
+.row-actions button.primary{background:var(--ink); color:var(--paper)}
+.row-actions button:hover{background:var(--paper2)}
+
+/* ---------- plan form ---------- */
+#planForm{display:grid; gap:18px 22px; grid-template-columns:1fr 1fr; margin:6px 0 4px}
+.fw{grid-column:1/-1}
+#planForm fieldset{border:1.5px solid var(--line2); margin:0; padding:14px 16px 6px; grid-column:1/-1}
+#planForm legend{font-weight:800; padding:0 8px; letter-spacing:.02em}
+#planForm label{display:block; font-weight:600; margin:12px 0 6px}
+#planForm input,#planForm textarea{
+  width:100%; font:1rem var(--sans); padding:12px 14px; min-height:50px;
+  border:2px solid var(--ink); background:var(--paper); color:var(--ink);
+}
+#planForm textarea{min-height:74px; resize:vertical}
+#planForm .err{color:var(--red); font-size:.85rem; font-weight:600; min-height:1.2em; display:block}
+.checks{display:flex; gap:10px 26px; flex-wrap:wrap; padding:6px 0 10px}
+.checks label{display:flex; gap:10px; align-items:center; font-weight:500; margin:0; min-height:44px}
+.checks input{appearance:none; width:22px; height:22px; border:2px solid var(--ink); flex:none; position:relative}
+.checks input:checked{background:var(--ink)}
+.checks input:checked::after{content:"✕"; position:absolute; inset:0; color:var(--paper); font:700 .85rem/18px var(--mono); text-align:center}
+.note{font-size:.86rem; color:var(--ink70); border-left:4px solid var(--line2); padding:4px 0 4px 14px; margin:14px 0; max-width:62ch}
+.planout{border:1.5px solid var(--ink); padding:18px 20px; margin:18px 0 0; background:var(--paper2)}
+.planout h3{margin:0 0 8px; font:400 1.15rem var(--disp); letter-spacing:.01em}
+.planout p{margin:6px 0; line-height:1.5}
+.planout .mono{font-size:.9em}
+.planout .missing{color:var(--cached); font-weight:600}
+
+/* ---------- pocket card ---------- */
+.ice{
+  border:2px solid var(--ink); max-width:430px; padding:22px 24px; margin:8px 0 10px;
+  background:#fff; color:#111;
+}
+.ice .h{font:400 1.5rem/1 var(--disp); border-bottom:3px solid #111; padding-bottom:8px; margin-bottom:12px; display:flex; justify-content:space-between; align-items:baseline}
+.ice .h span{font:700 .7rem var(--mono); letter-spacing:.12em}
+.ice dl{margin:0; display:grid; grid-template-columns:auto 1fr; gap:7px 16px}
+.ice dt{font:700 .68rem var(--mono); letter-spacing:.1em; text-transform:uppercase; align-self:baseline; padding-top:2px}
+.ice dd{margin:0; font-weight:600; font-size:1.05rem; border-bottom:1px solid #ccc; padding-bottom:2px}
+.ice .call911{margin:12px 0 0; background:#a5001f; color:#fff; font-weight:800; text-align:center; padding:10px; letter-spacing:.03em}
+.ice .gids{font-family:var(--mono); font-size:.75rem; margin-top:12px; color:#555; word-break:break-all}
+#card p.how{font-size:.86rem; color:var(--ink55); max-width:52ch}
+
+/* ---------- footer ---------- */
+footer{padding:30px 0 44px; color:var(--ink55); font-size:.88rem}
+footer h3{font:700 .72rem var(--mono); letter-spacing:.16em; text-transform:uppercase; color:var(--ink70); margin:0 0 8px}
+footer p{margin:6px 0; max-width:70ch}
+footer ul{margin:6px 0; padding-left:18px}
+
+/* ---------- toast ---------- */
+#toast{
+  position:fixed; left:50%; bottom:24px; transform:translateX(-50%) translateY(20px);
+  background:var(--ink); color:var(--paper); padding:12px 20px; font-weight:600;
+  opacity:0; pointer-events:none; transition:opacity .25s, transform .25s; max-width:86vw; z-index:50;
+}
+#toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
+
+/* ---------- mobile ---------- */
+@media (max-width:640px){
+  .kitlist{grid-template-columns:1fr}
+  #planForm{grid-template-columns:1fr}
+  .gauge{grid-template-columns:1fr 96px; grid-template-areas:"name val" "spark val" "meta meta"}
+  .gval{text-align:right}
+  .gspark svg{width:100%}
+  .addg{grid-template-columns:1fr}
+  .addg button{width:100%}
+  .ice{max-width:100%}
+}
+
+/* ---------- print: the pocket card only ---------- */
+@media print{
+  @page{margin:14mm}
+  body{background:#fff; font-size:12pt}
+  header,.banner,#watch,#kit,#plan,footer,#toast,.tools{display:none!important}
+  #card{padding:0; border:none}
+  #card h2,#card p.how,#btnPrint2{display:none!important}
+  .ice{border:2px solid #000; max-width:100%}
+}
+</style>
+</head>
+<body>
+<a class="skip" href="#watch">Skip to the gauges</a>
+
+<header class="mast">
+  <div class="wrap">
+    <div class="mast-row">
+      <div class="brand">
+        <span class="mark" aria-hidden="true">≈</span>
+        <h1>HIGHWATER</h1>
+      </div>
+      <div class="tools">
+        <button id="btnDark" aria-pressed="false" title="Night colors">Night</button>
+        <button id="btnText" aria-pressed="false" title="Larger text">A+</button>
+      </div>
+    </div>
+    <p class="tag">Flood readiness that survives the flood. River gauges and weather alerts when the network is up — a cached snapshot, your kit and your household plan when it isn&rsquo;t.</p>
+    <div class="statusline">
+      <span id="netPill" class="pill off" aria-live="polite">…</span>
+      <span class="mono" id="clock"></span>
+    </div>
+  </div>
+</header>
+
+<div class="banner" role="note">
+  In immediate danger? <strong>Call 911.</strong> Follow official evacuation orders — not this app. Data is not safety.
+</div>
+
+<main class="wrap">
+
+  <!-- ============ 01 WATCH ============ -->
+  <section id="watch" aria-labelledby="hwatch">
+    <h2 id="hwatch"><span class="no" aria-hidden="true">01</span> Watch the water</h2>
+    <p class="lede">Gauge heights come from the U.S. Geological Survey and active alerts from the National Weather Service. Region watched: <strong>New Jersey &amp; New York</strong>. When you&rsquo;re offline, everything below falls back to the last snapshot — with its age shown, never hidden.</p>
+
+    <div class="alerts" id="alerts" aria-live="polite">
+      <div class="none">Checking the National Weather Service&hellip;</div>
+    </div>
+
+    <div id="gaugeList"></div>
+
+    <form id="addGauge" class="addg" novalidate>
+      <label for="siteIn">Watch any USGS gauge</label>
+      <input id="siteIn" inputmode="numeric" autocomplete="off" spellcheck="false" placeholder="Site number, e.g. 01374500" aria-describedby="siteHint">
+      <button type="submit">Watch it</button>
+      <span class="hint" id="siteHint">Find site numbers at <a href="https://waterdata.usgs.gov/nwis/rt" target="_blank" rel="noopener">waterdata.usgs.gov</a>. Numbers are 8–15 digits. Your list is saved on this device, offline.</span>
+    </form>
+
+    <p class="src">Gauge heights: U.S. Geological Survey Instantaneous Values service (public domain). Alerts: NWS api.weather.gov. <span class="mono" id="snapTime"></span></p>
+  </section>
+
+  <!-- ============ 02 KIT ============ -->
+  <section id="kit" aria-labelledby="hkit">
+    <h2 id="hkit"><span class="no" aria-hidden="true">02</span> The 72-hour kit</h2>
+    <p class="lede">The National Weather Service tells every household to keep <q>enough food, water and medicine on hand at all times to last you at least 3 days</q> — because <q>oftentimes flash floods can occur within minutes and sometimes without any sign of rain.</q> Check what you have. Your progress is saved offline on this device.</p>
+
+    <div class="kitbar">
+      <span class="num mono" id="kitNum">0 / 0</span>
+      <div class="bar" role="progressbar" aria-labelledby="kitNum" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0" id="kitBar"><div class="fill" id="kitFill"></div></div>
+    </div>
+
+    <ul class="kitlist" id="kitList"></ul>
+
+    <div class="row-actions">
+      <button id="btnCopyKit" class="primary">Copy what&rsquo;s still missing</button>
+      <button id="btnResetKit">Start over</button>
+    </div>
+  </section>
+
+  <!-- ============ 03 PLAN ============ -->
+  <section id="plan" aria-labelledby="hplan">
+    <h2 id="hplan"><span class="no" aria-hidden="true">03</span> The household plan</h2>
+    <p class="lede">NWS: create a communications plan with <q>a specific person identified to contact for status updates or a safe location to meet up with family members</q> — and <q>don&rsquo;t wait to be ordered to leave; evacuate yourself!</q> Fill this in once, then print the pocket card in section 04.</p>
+
+    <form id="planForm" novalidate>
+      <div>
+        <label for="pName">Contact person (out of the area) *</label>
+        <input id="pName" autocomplete="off" placeholder="Who everyone calls">
+        <span class="err" id="eName"></span>
+      </div>
+      <div>
+        <label for="pPhone">Their phone *</label>
+        <input id="pPhone" inputmode="tel" autocomplete="off" placeholder="201-555-0134">
+        <span class="err" id="ePhone"></span>
+      </div>
+      <div class="fw">
+        <label for="pMeet">Meeting place if you can&rsquo;t go home</label>
+        <input id="pMeet" autocomplete="off" placeholder="Library, church, relative&rsquo;s house&hellip;">
+      </div>
+      <div class="fw">
+        <label for="pHelp">Who needs extra help? (medical, mobility, elderly)</label>
+        <textarea id="pHelp" placeholder="Mom — insulin, 2nd floor apartment. Mr. Ruiz next door — 84, no car."></textarea>
+      </div>
+
+      <fieldset>
+        <legend>Neighbors to check on</legend>
+        <div id="neighbors">
+          <label for="n1n">Neighbor 1 — name</label><input id="n1n" autocomplete="off" placeholder="Name">
+          <label for="n1p">Neighbor 1 — phone</label><input id="n1p" inputmode="tel" autocomplete="off" placeholder="Phone">
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <legend>Do you know how to shut off&hellip;?</legend>
+        <div class="checks">
+          <label><input type="checkbox" id="sWater"> Water main</label>
+          <label><input type="checkbox" id="sGas"> Gas valve</label>
+          <label><input type="checkbox" id="sElec"> Breaker box</label>
+        </div>
+        <p class="note">NWS: <q>clearly label circuit breakers</q>, and if you evacuate with time to spare, <q>disconnect utilities and appliances.</q></p>
+      </fieldset>
+    </form>
+
+    <p class="note">NWS on insurance: <q>Many flood insurance policies take at least 30 days to go into effect</q> — so the right time to look into one is before the rain, not during. Standard homeowners insurance doesn&rsquo;t cover flooding.</p>
+
+    <div class="planout" id="planOut" aria-live="polite"></div>
+
+    <div class="row-actions">
+      <button id="btnCopyPlan" class="primary">Copy plan as text</button>
+      <button id="btnPrint">Print the pocket card</button>
+    </div>
+  </section>
+
+  <!-- ============ 04 CARD ============ -->
+  <section id="card" aria-labelledby="hcard">
+    <h2 id="hcard"><span class="no" aria-hidden="true">04</span> Pocket card</h2>
+    <p class="how">Print this, fold it, put it in a wallet and a go-bag. It carries everything that matters when the phones do what floods make phones do. Works from a dead network because it&rsquo;s paper.</p>
+    <div class="ice" id="iceCard"></div>
+    <div class="row-actions"><button id="btnPrint2" class="primary">Print the card</button></div>
+  </section>
+
+</main>
+
+<footer class="wrap">
+  <h3>Sources &amp; honesty</h3>
+  <p>Gauge data: <a href="https://waterservices.usgs.gov/" target="_blank" rel="noopener">U.S. Geological Survey</a> Instantaneous Values service — public domain, credit U.S. Geological Survey. Alerts: <a href="https://api.weather.gov/" target="_blank" rel="noopener">api.weather.gov</a> — credit NOAA/National Weather Service. Safety guidance quoted from NWS flood safety pages: <a href="https://www.weather.gov/safety/flood-before" target="_blank" rel="noopener">before</a> and <a href="https://www.weather.gov/safety/flood-during" target="_blank" rel="noopener">during</a> a flood. Kit guidance also follows <a href="https://www.ready.gov/kit" target="_blank" rel="noopener">ready.gov/kit</a>.</p>
+  <p>HighWater shows what the sensors say and when they said it. It does not predict flooding, rate your safety, or replace any official warning. A gauge reading is not a promise; no alert is not safety. &ldquo;Turn Around, Don&rsquo;t Drown&rdquo; — NWS: <q>12 inches of water can float a car or small SUV.</q></p>
+  <p id="footBuild"></p>
+</footer>
+
+<div id="toast" role="status"></div>
+
+<noscript><div class="wrap" style="padding:20px 0"><strong>This page needs JavaScript</strong> to fetch gauges and save your kit and plan. The engine and tests live in this repository.</div></noscript>
+
+<script>
+/*ENGINE:START*/
+/* ============================================================
+   HIGHWATER ENGINE — pure functions, no DOM, no localStorage.
+   Extracted between ENGINE markers and unit-tested in Node
+   (tests.js). Same code runs in the browser.
+   ============================================================ */
+const HW = (() => {
+
+  function parseUSGS(json) {
+    const out = [];
+    const series = (json && json.value && json.value.timeSeries) || [];
+    series.forEach((ts) => {
+      const src = ts.sourceInfo || {};
+      const id = src.siteCode && src.siteCode[0] && src.siteCode[0].value;
+      const raw = (ts.values && ts.values[0] && ts.values[0].value) || [];
+      const pts = raw
+        .filter((v) => v && v.value !== undefined && v.value !== null && v.value !== "")
+        .map((v) => [v.dateTime, Math.round(parseFloat(v.value) * 100) / 100])
+        .filter((p) => !isNaN(p[1]));
+      if (!id || pts.length === 0) return;
+      const geo = (src.geoLocation && src.geoLocation.geogLocation) || {};
+      out.push({
+        id: String(id),
+        name: src.siteName || ("USGS site " + id),
+        lat: geo.lat, lon: geo.long,
+        unit: (ts.variable && ts.variable.unit && ts.variable.unit.unitCode) || "ft",
+        value: pts[pts.length - 1][1],
+        time: pts[pts.length - 1][0],
+        series: pts,
+      });
+    });
+    return out;
+  }
+
+  function parseNWS(json) {
+    const feats = (json && json.features) || [];
+    return feats.map((f) => {
+      const p = (f && f.properties) || {};
+      return {
+        event: p.event || "Alert",
+        headline: p.headline || "",
+        areaDesc: p.areaDesc || "",
+        severity: p.severity || "Unknown",
+        effective: p.effective || "",
+        expires: p.expires || "",
+        link: (f && f.id) || "",
+      };
+    });
+  }
+
+  function trend(series) {
+    if (!series || series.length < 2) return { d: 0, dir: "flat" };
+    const d = Math.round((series[series.length - 1][1] - series[0][1]) * 100) / 100;
+    let dir = "flat";
+    if (d > 0.05) dir = "rising";
+    else if (d < -0.05) dir = "falling";
+    return { d, dir };
+  }
+
+  function sparkline(series, w, h) {
+    if (!series || series.length < 2) return "";
+    const vals = series.map((p) => p[1]);
+    const min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+    const span = (max - min) || 1;
+    const n = series.length;
+    const x = (i) => (i / (n - 1)) * w;
+    const y = (v) => h - 3 - ((v - min) / span) * (h - 6);
+    let path = "M" + x(0).toFixed(1) + "," + y(vals[0]).toFixed(1);
+    for (let i = 1; i < n; i++) path += " L" + x(i).toFixed(1) + "," + y(vals[i]).toFixed(1);
+    return path;
+  }
+
+  function fmtAge(iso, nowMs) {
+    const t = Date.parse(iso);
+    if (isNaN(t)) return "";
+    const s = Math.max(0, Math.floor((nowMs - t) / 1000));
+    if (s < 60) return "just now";
+    const m = Math.floor(s / 60);
+    if (m < 60) return m + " min ago";
+    const h = Math.floor(m / 60);
+    if (h < 48) return h + " h " + (m % 60) + " min ago";
+    return new Date(t).toISOString().slice(0, 10);
+  }
+
+  function kitStats(items, checked) {
+    const on = checked || {};
+    const stats = { total: items.length, done: 0, pct: 0, cats: {}, missing: [] };
+    items.forEach((it) => {
+      const c = stats.cats[it.cat] || (stats.cats[it.cat] = { done: 0, total: 0 });
+      c.total++;
+      if (on[it.id]) { stats.done++; c.done++; } else stats.missing.push(it);
+    });
+    stats.pct = stats.total ? Math.round((stats.done / stats.total) * 100) : 0;
+    return stats;
+  }
+
+  function kitMissingText(stats) {
+    if (!stats.missing.length) return "72-hour kit: complete.\n";
+    let t = "72-hour kit — still missing (" + stats.missing.length + " of " + stats.total + "):\n";
+    const byCat = {};
+    stats.missing.forEach((it) => { (byCat[it.cat] = byCat[it.cat] || []).push(it.label); });
+    Object.keys(byCat).forEach((cat) => {
+      t += "\n[" + cat + "]\n";
+      byCat[cat].forEach((label) => { t += "  - " + label + "\n"; });
+    });
+    return t;
+  }
+
+  function digits(s) { return String(s || "").replace(/\D+/g, ""); }
+
+  function validatePlan(p) {
+    const errors = {};
+    const name = String(p.contactName || "").trim();
+    if (!name) errors.contactName = "Who does everyone call? Add a contact person.";
+    const d = digits(p.contactPhone);
+    if (!d) errors.contactPhone = "Add their phone — the one number that matters most.";
+    else if (d.length < 10 || d.length > 15) errors.contactPhone = "That doesn't look like a phone number (10–15 digits).";
+    const n1 = digits(p.neighbor1Phone);
+    if (p.neighbor1Phone && n1 && (n1.length < 10 || n1.length > 15)) errors.neighbor1Phone = "Neighbor's phone looks wrong (10–15 digits).";
+    return { ok: Object.keys(errors).length === 0, errors: errors };
+  }
+
+  function planText(p, stats, gauges) {
+    const L = [];
+    L.push("HIGHWATER — household flood plan");
+    L.push("");
+    L.push("CONTACT: " + (p.contactName || "—") + " · " + (p.contactPhone || "—"));
+    if (p.meetingPlace) L.push("MEETING PLACE: " + p.meetingPlace);
+    if (p.needsHelp) L.push("NEEDS EXTRA HELP: " + p.needsHelp);
+    if (p.neighbor1Name) L.push("CHECK ON: " + p.neighbor1Name + (p.neighbor1Phone ? " · " + p.neighbor1Phone : ""));
+    L.push("SHUTOFFS KNOWN: " + shutoffList(p).toUpperCase());
+    L.push("");
+    if (stats) L.push("KIT: " + stats.done + "/" + stats.total + " ready");
+    if (gauges && gauges.length) {
+      L.push("WATCHING:");
+      gauges.forEach((g) => L.push("  USGS " + g.id + " — " + g.name + " — " + g.value + " " + g.unit));
+    }
+    L.push("");
+    L.push("In danger: call 911. Evacuate when told — don't wait.");
+    L.push("Turn Around, Don't Drown. Never drive into flooded roadways.");
+    return L.join("\n");
+  }
+
+  function shutoffList(p) {
+    const s = [];
+    if (p.shutoffWater) s.push("water");
+    if (p.shutoffGas) s.push("gas");
+    if (p.shutoffElec) s.push("electric");
+    return s.length ? s.join(", ") : "none marked";
+  }
+
+  function netState(online, lastLiveMs, nowMs) {
+    if (!lastLiveMs) return { label: "SNAPSHOT", cls: "cached", age: "" };
+    const ageMin = Math.floor((nowMs - lastLiveMs) / 60000);
+    const age = ageMin < 1 ? "just now" : ageMin + " min ago";
+    if (online) return ageMin <= 30
+      ? { label: "LIVE", cls: "live", age: age }
+      : { label: "STALE", cls: "cached", age: age };
+    return { label: "CACHED", cls: "cached", age: age };
+  }
+
+  function siteIdOK(s) { return /^\d{8,15}$/.test(String(s || "").trim()); }
+
+  return {
+    parseUSGS, parseNWS, trend, sparkline, fmtAge,
+    kitStats, kitMissingText, validatePlan, planText, shutoffList,
+    netState, siteIdOK, digits,
+  };
+})();
+/*ENGINE:END*/
+
+/* ============================================================
+   KIT DATA — every item follows NWS flood-safety guidance
+   (weather.gov/safety/flood-before) and ready.gov/kit.
+   ============================================================ */
+const KIT = [
+  { id:"w1", cat:"Water & food", label:"Water — 1 gallon per person per day, 3 days", cite:"NWS / Ready.gov" },
+  { id:"w2", cat:"Water & food", label:"Food — 3 days, non-perishable", cite:"NWS" },
+  { id:"w3", cat:"Water & food", label:"Manual can opener", cite:"Ready.gov" },
+  { id:"r1", cat:"Radio & light", label:"Battery or hand-crank weather radio (NOAA)", cite:"NWS" },
+  { id:"r2", cat:"Radio & light", label:"Flashlight", cite:"NWS" },
+  { id:"r3", cat:"Radio & light", label:"Extra batteries, right sizes", cite:"NWS" },
+  { id:"m1", cat:"First aid & medicine", label:"First aid kit", cite:"NWS" },
+  { id:"m2", cat:"First aid & medicine", label:"3-day supply of prescription medicine", cite:"NWS" },
+  { id:"m3", cat:"First aid & medicine", label:"Glasses / contact lenses", cite:"Ready.gov" },
+  { id:"c1", cat:"Warmth & shelter", label:"Blankets or sleeping bags", cite:"NWS" },
+  { id:"c2", cat:"Warmth & shelter", label:"Complete change of clothes", cite:"Ready.gov" },
+  { id:"c3", cat:"Warmth & shelter", label:"Rubber boots", cite:"NWS" },
+  { id:"c4", cat:"Warmth & shelter", label:"Rain gear", cite:"Ready.gov" },
+  { id:"h1", cat:"Home defense", label:"Sandbags — if time allows", cite:"NWS" },
+  { id:"h2", cat:"Home defense", label:"Plastic sheeting + duct tape", cite:"Ready.gov" },
+  { id:"h3", cat:"Home defense", label:"Whistle to signal for help", cite:"Ready.gov" },
+  { id:"h4", cat:"Home defense", label:"Work gloves + rubber gloves", cite:"NWS" },
+  { id:"h5", cat:"Home defense", label:"Matches, waterproof container", cite:"Ready.gov" },
+  { id:"d1", cat:"Documents & money", label:"IDs, insurance, deeds — waterproof bag", cite:"Ready.gov" },
+  { id:"d2", cat:"Documents & money", label:"Cash in small bills", cite:"Ready.gov" },
+  { id:"d3", cat:"Documents & money", label:"Local paper maps", cite:"Ready.gov" },
+  { id:"s1", cat:"Sanitation", label:"Moist towelettes + garbage bags", cite:"Ready.gov" },
+  { id:"s2", cat:"Sanitation", label:"Soap + hand sanitizer", cite:"Ready.gov" },
+  { id:"s3", cat:"Sanitation", label:"Household bleach + medicine dropper", cite:"Ready.gov" },
+  { id:"p1", cat:"Power", label:"Power bank, charged + cables", cite:"NWS" },
+  { id:"f1", cat:"Family & pets", label:"Baby formula / diapers if needed", cite:"Ready.gov" },
+  { id:"f2", cat:"Family & pets", label:"Pet food + crate / leash", cite:"Ready.gov" },
+];
+
+/* Snapshot taken at build time — real USGS readings, embedded so
+   the very first offline load still shows true data with its age. */
+const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500","name":"VALLEY STREAM AT VALLEY STREAM NY","lat":0,"lon":0,"unit":"ft","value":1.05,"time":"2026-11-22T13:00:00.000-05:00","series":[["2026-11-21T13:30:00.000-05:00",1.05],["2026-11-21T13:45:00.000-05:00",1.05],["2026-11-21T14:00:00.000-05:00",1.05],["2026-11-21T14:15:00.000-05:00",1.05],["2026-11-21T14:30:00.000-05:00",1.05],["2026-11-21T14:45:00.000-05:00",1.05],["2026-11-21T15:00:00.000-05:00",1.05],["2026-11-21T15:15:00.000-05:00",1.05],["2026-11-21T15:30:00.000-05:00",1.05],["2026-11-21T15:45:00.000-05:00",1.05],["2026-11-21T16:00:00.000-05:00",1.05],["2026-11-21T16:15:00.000-05:00",1.05],["2026-11-21T16:30:00.000-05:00",1.05],["2026-11-21T16:45:00.000-05:00",1.05],["2026-11-21T17:00:00.000-05:00",1.05],["2026-11-21T17:15:00.000-05:00",1.05],["2026-11-21T17:30:00.000-05:00",1.05],["2026-11-21T17:45:00.000-05:00",1.05],["2026-11-21T18:00:00.000-05:00",1.05],["2026-11-21T18:15:00.000-05:00",1.05],["2026-11-21T18:30:00.000-05:00",1.05],["2026-11-21T18:45:00.000-05:00",1.05],["2026-11-21T19:00:00.000-05:00",1.05],["2026-11-21T19:15:00.000-05:00",1.05],["2026-11-21T19:30:00.000-05:00",1.05],["2026-11-21T19:45:00.000-05:00",1.05],["2026-11-21T20:00:00.000-05:00",1.05],["2026-11-21T20:15:00.000-05:00",1.05],["2026-11-21T20:30:00.000-05:00",1.05],["2026-11-21T20:45:00.000-05:00",1.05],["2026-11-21T21:00:00.000-05:00",1.05],["2026-11-21T21:15:00.000-05:00",1.05],["2026-11-21T21:30:00.000-05:00",1.05],["2026-11-21T21:45:00.000-05:00",1.05],["2026-11-21T22:00:00.000-05:00",1.05],["2026-11-21T22:15:00.000-05:00",1.05],["2026-11-21T22:30:00.000-05:00",1.05],["2026-11-21T22:45:00.000-05:00",1.05],["2026-11-21T23:00:00.000-05:00",1.05],["2026-11-21T23:15:00.000-05:00",1.05],["2026-11-21T23:30:00.000-05:00",1.05],["2026-11-21T23:45:00.000-05:00",1.05],["2026-11-22T00:00:00.000-05:00",1.05],["2026-11-22T00:15:00.000-05:00",1.05],["2026-11-22T00:30:00.000-05:00",1.05],["2026-11-22T00:45:00.000-05:00",1.05],["2026-11-22T01:00:00.000-05:00",1.05],["2026-11-22T01:15:00.000-05:00",1.05],["2026-11-22T01:30:00.000-05:00",1.05],["2026-11-22T01:45:00.000-05:00",1.05],["2026-11-22T02:00:00.000-05:00",1.05],["2026-11-22T02:15:00.000-05:00",1.05],["2026-11-22T02:30:00.000-05:00",1.05],["2026-11-22T02:45:00.000-05:00",1.05],["2026-11-22T03:00:00.000-05:00",1.05],["2026-11-22T03:15:00.000-05:00",1.05],["2026-11-22T03:30:00.000-05:00",1.05],["2026-11-22T03:45:00.000-05:00",1.05],["2026-11-22T04:00:00.000-05:00",1.05],["2026-11-22T04:15:00.000-05:00",1.05],["2026-11-22T04:30:00.000-05:00",1.05],["2026-11-22T04:45:00.000-05:00",1.05],["2026-11-22T05:00:00.000-05:00",1.05],["2026-11-22T05:15:00.000-05:00",1.05],["2026-11-22T05:30:00.000-05:00",1.05],["2026-11-22T05:45:00.000-05:00",1.05],["2026-11-22T06:00:00.000-05:00",1.05],["2026-11-22T06:15:00.000-05:00",1.05],["2026-11-22T06:30:00.000-05:00",1.05],["2026-11-22T06:45:00.000-05:00",1.05],["2026-11-22T07:00:00.000-05:00",1.05],["2026-11-22T07:15:00.000-05:00",1.05],["2026-11-22T07:30:00.000-05:00",1.05],["2026-11-22T07:45:00.000-05:00",1.05],["2026-11-22T08:00:00.000-05:00",1.05],["2026-11-22T08:15:00.000-05:00",1.05],["2026-11-22T08:30:00.000-05:00",1.05],["2026-11-22T08:45:00.000-05:00",1.05],["2026-11-22T09:00:00.000-05:00",1.05],["2026-11-22T09:15:00.000-05:00",1.05],["2026-11-22T09:30:00.000-05:00",1.05],["2026-11-22T09:45:00.000-05:00",1.05],["2026-11-22T10:00:00.000-05:00",1.05],["2026-11-22T10:15:00.000-05:00",1.05],["2026-11-22T10:30:00.000-05:00",1.05],["2026-11-22T10:45:00.000-05:00",1.05],["2026-11-22T11:00:00.000-05:00",1.05],["2026-11-22T11:15:00.000-05:00",1.05],["2026-11-22T11:30:00.000-05:00",1.05],["2026-11-22T11:45:00.000-05:00",1.05],["2026-11-22T12:00:00.000-05:00",1.05],["2026-11-22T12:15:00.000-05:00",1.05],["2026-11-22T12:30:00.000-05:00",1.05],["2026-11-22T12:45:00.000-05:00",1.05],["2026-11-22T13:00:00.000-05:00",1.05]]},{"id":"01377000","name":"Hackensack River at Rivervale NJ","lat":0,"lon":0,"unit":"ft","value":1.67,"time":"2026-11-22T12:15:00.000-05:00","series":[["2026-11-21T13:30:00.000-05:00",1.67],["2026-11-21T13:45:00.000-05:00",1.67],["2026-11-21T14:00:00.000-05:00",1.67],["2026-11-21T14:15:00.000-05:00",1.67],["2026-11-21T14:30:00.000-05:00",1.67],["2026-11-21T14:45:00.000-05:00",1.67],["2026-11-21T15:00:00.000-05:00",1.67],["2026-11-21T15:15:00.000-05:00",1.67],["2026-11-21T15:30:00.000-05:00",1.67],["2026-11-21T15:45:00.000-05:00",1.67],["2026-11-21T16:00:00.000-05:00",1.67],["2026-11-21T16:15:00.000-05:00",1.67],["2026-11-21T16:30:00.000-05:00",1.67],["2026-11-21T16:45:00.000-05:00",1.67],["2026-11-21T17:00:00.000-05:00",1.67],["2026-11-21T17:15:00.000-05:00",1.67],["2026-11-21T17:30:00.000-05:00",1.67],["2026-11-21T17:45:00.000-05:00",1.67],["2026-11-21T18:00:00.000-05:00",1.67],["2026-11-21T18:15:00.000-05:00",1.67],["2026-11-21T18:30:00.000-05:00",1.67],["2026-11-21T18:45:00.000-05:00",1.67],["2026-11-21T19:00:00.000-05:00",1.67],["2026-11-21T19:15:00.000-05:00",1.67],["2026-11-21T19:30:00.000-05:00",1.67],["2026-11-21T19:45:00.000-05:00",1.67],["2026-11-21T20:00:00.000-05:00",1.67],["2026-11-21T20:15:00.000-05:00",1.67],["2026-11-21T20:30:00.000-05:00",1.67],["2026-11-21T20:45:00.000-05:00",1.67],["2026-11-21T21:00:00.000-05:00",1.67],["2026-11-21T21:15:00.000-05:00",1.67],["2026-11-21T21:30:00.000-05:00",1.67],["2026-11-21T21:45:00.000-05:00",1.67],["2026-11-21T22:00:00.000-05:00",1.67],["2026-11-21T22:15:00.000-05:00",1.67],["2026-11-21T22:30:00.000-05:00",1.67],["2026-11-21T22:45:00.000-05:00",1.67],["2026-11-21T23:00:00.000-05:00",1.67],["2026-11-21T23:15:00.000-05:00",1.67],["2026-11-21T23:30:00.000-05:00",1.67],["2026-11-21T23:45:00.000-05:00",1.67],["2026-11-22T00:00:00.000-05:00",1.67],["2026-11-22T00:15:00.000-05:00",1.67],["2026-11-22T00:30:00.000-05:00",1.67],["2026-11-22T00:45:00.000-05:00",1.67],["2026-11-22T01:00:00.000-05:00",1.67],["2026-11-22T01:15:00.000-05:00",1.67],["2026-11-22T01:30:00.000-05:00",1.67],["2026-11-22T01:45:00.000-05:00",1.67],["2026-11-22T02:00:00.000-05:00",1.67],["2026-11-22T02:15:00.000-05:00",1.67],["2026-11-22T02:30:00.000-05:00",1.67],["2026-11-22T02:45:00.000-05:00",1.67],["2026-11-22T03:00:00.000-05:00",1.67],["2026-11-22T03:15:00.000-05:00",1.67],["2026-11-22T03:30:00.000-05:00",1.67],["2026-11-22T03:45:00.000-05:00",1.67],["2026-11-22T04:00:00.000-05:00",1.67],["2026-11-22T04:15:00.000-05:00",1.67],["2026-11-22T04:30:00.000-05:00",1.67],["2026-11-22T04:45:00.000-05:00",1.67],["2026-11-22T05:00:00.000-05:00",1.67],["2026-11-22T05:15:00.000-05:00",1.67],["2026-11-22T05:30:00.000-05:00",1.67],["2026-11-22T05:45:00.000-05:00",1.67],["2026-11-22T06:00:00.000-05:00",1.67],["2026-11-22T06:15:00.000-05:00",1.67],["2026-11-22T06:30:00.000-05:00",1.67],["2026-11-22T06:45:00.000-05:00",1.67],["2026-11-22T07:00:00.000-05:00",1.67],["2026-11-22T07:15:00.000-05:00",1.67],["2026-11-22T07:30:00.000-05:00",1.67],["2026-11-22T07:45:00.000-05:00",1.67],["2026-11-22T08:00:00.000-05:00",1.67],["2026-11-22T08:15:00.000-05:00",1.67],["2026-11-22T08:30:00.000-05:00",1.67],["2026-11-22T08:45:00.000-05:00",1.67],["2026-11-22T09:00:00.000-05:00",1.67],["2026-11-22T09:15:00.000-05:00",1.67],["2026-11-22T09:30:00.000-05:00",1.67],["2026-11-22T09:45:00.000-05:00",1.67],["2026-11-22T10:00:00.000-05:00",1.67],["2026-11-22T10:15:00.000-05:00",1.67],["2026-11-22T10:30:00.000-05:00",1.67],["2026-11-22T10:45:00.000-05:00",1.67],["2026-11-22T11:00:00.000-05:00",1.67],["2026-11-22T11:15:00.000-05:00",1.67],["2026-11-22T11:30:00.000-05:00",1.67],["2026-11-22T11:45:00.000-05:00",1.67],["2026-11-22T12:00:00.000-05:00",1.67],["2026-11-22T12:15:00.000-05:00",1.67]]},{"id":"01377500","name":"Pascack Brook at Westwood NJ","lat":0,"lon":0,"unit":"ft","value":1.51,"time":"2026-11-22T13:10:00.000-05:00","series":[["2026-11-21T13:25:00.000-05:00",1.52],["2026-11-21T13:50:00.000-05:00",1.51],["2026-11-21T14:15:00.000-05:00",1.52],["2026-11-21T14:40:00.000-05:00",1.51],["2026-11-21T15:05:00.000-05:00",1.5],["2026-11-21T15:30:00.000-05:00",1.5],["2026-11-21T15:55:00.000-05:00",1.51],["2026-11-21T16:20:00.000-05:00",1.51],["2026-11-21T16:45:00.000-05:00",1.51],["2026-11-21T17:10:00.000-05:00",1.51],["2026-11-21T17:35:00.000-05:00",1.51],["2026-11-21T18:00:00.000-05:00",1.51],["2026-11-21T18:25:00.000-05:00",1.51],["2026-11-21T18:50:00.000-05:00",1.51],["2026-11-21T19:15:00.000-05:00",1.51],["2026-11-21T19:40:00.000-05:00",1.51],["2026-11-21T20:05:00.000-05:00",1.51],["2026-11-21T20:30:00.000-05:00",1.51],["2026-11-21T20:55:00.000-05:00",1.51],["2026-11-21T21:20:00.000-05:00",1.5],["2026-11-21T21:45:00.000-05:00",1.5],["2026-11-21T22:10:00.000-05:00",1.51],["2026-11-21T22:35:00.000-05:00",1.5],["2026-11-21T23:00:00.000-05:00",1.49],["2026-11-21T23:25:00.000-05:00",1.5],["2026-11-21T23:50:00.000-05:00",1.5],["2026-11-22T00:15:00.000-05:00",1.5],["2026-11-22T00:40:00.000-05:00",1.5],["2026-11-22T01:05:00.000-05:00",1.51],["2026-11-22T01:30:00.000-05:00",1.5],["2026-11-22T01:55:00.000-05:00",1.51],["2026-11-22T02:20:00.000-05:00",1.51],["2026-11-22T02:45:00.000-05:00",1.49],["2026-11-22T03:10:00.000-05:00",1.49],["2026-11-22T03:35:00.000-05:00",1.49],["2026-11-22T04:00:00.000-05:00",1.49],["2026-11-22T04:25:00.000-05:00",1.49],["2026-11-22T04:50:00.000-05:00",1.49],["2026-11-22T05:15:00.000-05:00",1.49],["2026-11-22T05:40:00.000-05:00",1.49],["2026-11-22T06:05:00.000-05:00",1.49],["2026-11-22T06:30:00.000-05:00",1.49],["2026-11-22T06:55:00.000-05:00",1.51],["2026-11-22T07:20:00.000-05:00",1.51],["2026-11-22T07:45:00.000-05:00",1.51],["2026-11-22T08:10:00.000-05:00",1.51],["2026-11-22T08:35:00.000-05:00",1.51],["2026-11-22T09:00:00.000-05:00",1.49],["2026-11-22T09:25:00.000-05:00",1.51],["2026-11-22T09:50:00.000-05:00",1.49],["2026-11-22T10:15:00.000-05:00",1.5],["2026-11-22T10:40:00.000-05:00",1.51],["2026-11-22T11:05:00.000-05:00",1.5],["2026-11-22T11:30:00.000-05:00",1.5],["2026-11-22T11:55:00.000-05:00",1.51],["2026-11-22T12:20:00.000-05:00",1.51],["2026-11-22T12:45:00.000-05:00",1.52],["2026-11-22T13:10:00.000-05:00",1.51]]},{"id":"01378500","name":"Hackensack River at New Milford NJ","lat":0,"lon":0,"unit":"ft","value":1.58,"time":"2026-11-22T12:15:00.000-05:00","series":[["2026-11-21T13:30:00.000-05:00",1.58],["2026-11-21T13:45:00.000-05:00",1.58],["2026-11-21T14:00:00.000-05:00",1.58],["2026-11-21T14:15:00.000-05:00",1.58],["2026-11-21T14:30:00.000-05:00",1.58],["2026-11-21T14:45:00.000-05:00",1.58],["2026-11-21T15:00:00.000-05:00",1.58],["2026-11-21T15:15:00.000-05:00",1.58],["2026-11-21T15:30:00.000-05:00",1.58],["2026-11-21T15:45:00.000-05:00",1.58],["2026-11-21T16:00:00.000-05:00",1.58],["2026-11-21T16:15:00.000-05:00",1.58],["2026-11-21T16:30:00.000-05:00",1.58],["2026-11-21T16:45:00.000-05:00",1.58],["2026-11-21T17:00:00.000-05:00",1.58],["2026-11-21T17:15:00.000-05:00",1.58],["2026-11-21T17:30:00.000-05:00",1.58],["2026-11-21T17:45:00.000-05:00",1.58],["2026-11-21T18:00:00.000-05:00",1.58],["2026-11-21T18:15:00.000-05:00",1.58],["2026-11-21T18:30:00.000-05:00",1.58],["2026-11-21T18:45:00.000-05:00",1.58],["2026-11-21T19:00:00.000-05:00",1.58],["2026-11-21T19:15:00.000-05:00",1.58],["2026-11-21T19:30:00.000-05:00",1.58],["2026-11-21T19:45:00.000-05:00",1.58],["2026-11-21T20:00:00.000-05:00",1.58],["2026-11-21T20:15:00.000-05:00",1.58],["2026-11-21T20:30:00.000-05:00",1.58],["2026-11-21T20:45:00.000-05:00",1.58],["2026-11-21T21:00:00.000-05:00",1.58],["2026-11-21T21:15:00.000-05:00",1.58],["2026-11-21T21:30:00.000-05:00",1.57],["2026-11-21T21:45:00.000-05:00",1.57],["2026-11-21T22:00:00.000-05:00",1.56],["2026-11-21T22:15:00.000-05:00",1.56],["2026-11-21T22:30:00.000-05:00",1.55],["2026-11-21T22:45:00.000-05:00",1.55],["2026-11-21T23:00:00.000-05:00",1.55],["2026-11-21T23:15:00.000-05:00",1.55],["2026-11-21T23:30:00.000-05:00",1.54],["2026-11-21T23:45:00.000-05:00",1.54],["2026-11-22T00:00:00.000-05:00",1.54],["2026-11-22T00:15:00.000-05:00",1.54],["2026-11-22T00:30:00.000-05:00",1.54],["2026-11-22T00:45:00.000-05:00",1.54],["2026-11-22T01:00:00.000-05:00",1.53],["2026-11-22T01:15:00.000-05:00",1.53],["2026-11-22T01:30:00.000-05:00",1.53],["2026-11-22T01:45:00.000-05:00",1.53],["2026-11-22T02:00:00.000-05:00",1.53],["2026-11-22T02:15:00.000-05:00",1.53],["2026-11-22T02:30:00.000-05:00",1.53],["2026-11-22T02:45:00.000-05:00",1.52],["2026-11-22T03:00:00.000-05:00",1.52],["2026-11-22T03:15:00.000-05:00",1.52],["2026-11-22T03:30:00.000-05:00",1.52],["2026-11-22T03:45:00.000-05:00",1.52],["2026-11-22T04:00:00.000-05:00",1.52],["2026-11-22T04:15:00.000-05:00",1.52],["2026-11-22T04:30:00.000-05:00",1.51],["2026-11-22T04:45:00.000-05:00",1.51],["2026-11-22T05:00:00.000-05:00",1.52],["2026-11-22T05:15:00.000-05:00",1.53],["2026-11-22T05:30:00.000-05:00",1.54],["2026-11-22T05:45:00.000-05:00",1.54],["2026-11-22T06:00:00.000-05:00",1.54],["2026-11-22T06:15:00.000-05:00",1.55],["2026-11-22T06:30:00.000-05:00",1.55],["2026-11-22T06:45:00.000-05:00",1.55],["2026-11-22T07:00:00.000-05:00",1.55],["2026-11-22T07:15:00.000-05:00",1.55],["2026-11-22T07:30:00.000-05:00",1.54],["2026-11-22T07:45:00.000-05:00",1.54],["2026-11-22T08:00:00.000-05:00",1.53],["2026-11-22T08:15:00.000-05:00",1.53],["2026-11-22T08:30:00.000-05:00",1.52],["2026-11-22T08:45:00.000-05:00",1.52],["2026-11-22T09:00:00.000-05:00",1.52],["2026-11-22T09:15:00.000-05:00",1.52],["2026-11-22T09:30:00.000-05:00",1.51],["2026-11-22T09:45:00.000-05:00",1.51],["2026-11-22T10:00:00.000-05:00",1.52],["2026-11-22T10:15:00.000-05:00",1.54],["2026-11-22T10:30:00.000-05:00",1.56],["2026-11-22T10:45:00.000-05:00",1.56],["2026-11-22T11:00:00.000-05:00",1.56],["2026-11-22T11:15:00.000-05:00",1.57],["2026-11-22T11:30:00.000-05:00",1.58],["2026-11-22T11:45:00.000-05:00",1.58],["2026-11-22T12:00:00.000-05:00",1.58],["2026-11-22T12:15:00.000-05:00",1.58]]},{"id":"01379000","name":"Passaic River near Millington NJ","lat":0,"lon":0,"unit":"ft","value":4.82,"time":"2026-11-22T13:00:00.000-05:00","series":[["2026-11-21T13:30:00.000-05:00",4.86],["2026-11-21T13:45:00.000-05:00",4.86],["2026-11-21T14:00:00.000-05:00",4.86],["2026-11-21T14:15:00.000-05:00",4.86],["2026-11-21T14:30:00.000-05:00",4.86],["2026-11-21T14:45:00.000-05:00",4.86],["2026-11-21T15:00:00.000-05:00",4.86],["2026-11-21T15:15:00.000-05:00",4.86],["2026-11-21T15:30:00.000-05:00",4.86],["2026-11-21T15:45:00.000-05:00",4.86],["2026-11-21T16:00:00.000-05:00",4.86],["2026-11-21T16:15:00.000-05:00",4.86],["2026-11-21T16:30:00.000-05:00",4.86],["2026-11-21T16:45:00.000-05:00",4.86],["2026-11-21T17:00:00.000-05:00",4.86],["2026-11-21T17:15:00.000-05:00",4.86],["2026-11-21T17:30:00.000-05:00",4.86],["2026-11-21T17:45:00.000-05:00",4.86],["2026-11-21T18:00:00.000-05:00",4.86],["2026-11-21T18:15:00.000-05:00",4.85],["2026-11-21T18:30:00.000-05:00",4.85],["2026-11-21T18:45:00.000-05:00",4.85],["2026-11-21T19:00:00.000-05:00",4.85],["2026-11-21T19:15:00.000-05:00",4.85],["2026-11-21T19:30:00.000-05:00",4.85],["2026-11-21T19:45:00.000-05:00",4.85],["2026-11-21T20:00:00.000-05:00",4.85],["2026-11-21T20:15:00.000-05:00",4.85],["2026-11-21T20:30:00.000-05:00",4.85],["2026-11-21T20:45:00.000-05:00",4.85],["2026-11-21T21:00:00.000-05:00",4.85],["2026-11-21T21:15:00.000-05:00",4.84],["2026-11-21T21:30:00.000-05:00",4.84],["2026-11-21T21:45:00.000-05:00",4.84],["2026-11-21T22:00:00.000-05:00",4.84],["2026-11-21T22:15:00.000-05:00",4.84],["2026-11-21T22:30:00.000-05:00",4.84],["2026-11-21T22:45:00.000-05:00",4.84],["2026-11-21T23:00:00.000-05:00",4.84],["2026-11-21T23:15:00.000-05:00",4.84],["2026-11-21T23:30:00.000-05:00",4.84],["2026-11-21T23:45:00.000-05:00",4.84],["2026-11-22T00:00:00.000-05:00",4.84],["2026-11-22T00:15:00.000-05:00",4.84],["2026-11-22T00:30:00.000-05:00",4.84],["2026-11-22T00:45:00.000-05:00",4.84],["2026-11-22T01:00:00.000-05:00",4.84],["2026-11-22T01:15:00.000-05:00",4.84],["2026-11-22T01:30:00.000-05:00",4.84],["2026-11-22T01:45:00.000-05:00",4.84],["2026-11-22T02:00:00.000-05:00",4.84],["2026-11-22T02:15:00.000-05:00",4.84],["2026-11-22T02:30:00.000-05:00",4.84],["2026-11-22T02:45:00.000-05:00",4.84],["2026-11-22T03:00:00.000-05:00",4.84],["2026-11-22T03:15:00.000-05:00",4.84],["2026-11-22T03:30:00.000-05:00",4.84],["2026-11-22T03:45:00.000-05:00",4.84],["2026-11-22T04:00:00.000-05:00",4.83],["2026-11-22T04:15:00.000-05:00",4.83],["2026-11-22T04:30:00.000-05:00",4.83],["2026-11-22T04:45:00.000-05:00",4.83],["2026-11-22T05:00:00.000-05:00",4.83],["2026-11-22T05:15:00.000-05:00",4.83],["2026-11-22T05:30:00.000-05:00",4.83],["2026-11-22T05:45:00.000-05:00",4.83],["2026-11-22T06:00:00.000-05:00",4.83],["2026-11-22T06:15:00.000-05:00",4.83],["2026-11-22T06:30:00.000-05:00",4.83],["2026-11-22T06:45:00.000-05:00",4.83],["2026-11-22T07:00:00.000-05:00",4.83],["2026-11-22T07:15:00.000-05:00",4.83],["2026-11-22T07:30:00.000-05:00",4.83],["2026-11-22T07:45:00.000-05:00",4.83],["2026-11-22T08:00:00.000-05:00",4.83],["2026-11-22T08:15:00.000-05:00",4.83],["2026-11-22T08:30:00.000-05:00",4.83],["2026-11-22T08:45:00.000-05:00",4.83],["2026-11-22T09:00:00.000-05:00",4.83],["2026-11-22T09:15:00.000-05:00",4.82],["2026-11-22T09:30:00.000-05:00",4.82],["2026-11-22T09:45:00.000-05:00",4.82],["2026-11-22T10:00:00.000-05:00",4.82],["2026-11-22T10:15:00.000-05:00",4.82],["2026-11-22T10:30:00.000-05:00",4.82],["2026-11-22T10:45:00.000-05:00",4.82],["2026-11-22T11:00:00.000-05:00",4.82],["2026-11-22T11:15:00.000-05:00",4.82],["2026-11-22T11:30:00.000-05:00",4.82],["2026-11-22T11:45:00.000-05:00",4.82],["2026-11-22T12:00:00.000-05:00",4.82],["2026-11-22T12:15:00.000-05:00",4.82],["2026-11-22T12:30:00.000-05:00",4.82],["2026-11-22T12:45:00.000-05:00",4.82],["2026-11-22T13:00:00.000-05:00",4.82]]},{"id":"01379500","name":"Passaic River near Chatham NJ","lat":0,"lon":0,"unit":"ft","value":3.67,"time":"2026-11-22T13:00:00.000-05:00","series":[["2026-11-21T13:30:00.000-05:00",3.75],["2026-11-21T13:45:00.000-05:00",3.75],["2026-11-21T14:00:00.000-05:00",3.75],["2026-11-21T14:15:00.000-05:00",3.75],["2026-11-21T14:30:00.000-05:00",3.74],["2026-11-21T14:45:00.000-05:00",3.74],["2026-11-21T15:00:00.000-05:00",3.74],["2026-11-21T15:15:00.000-05:00",3.74],["2026-11-21T15:30:00.000-05:00",3.74],["2026-11-21T15:45:00.000-05:00",3.74],["2026-11-21T16:00:00.000-05:00",3.74],["2026-11-21T16:15:00.000-05:00",3.74],["2026-11-21T16:30:00.000-05:00",3.74],["2026-11-21T16:45:00.000-05:00",3.74],["2026-11-21T17:00:00.000-05:00",3.74],["2026-11-21T17:15:00.000-05:00",3.73],["2026-11-21T17:30:00.000-05:00",3.73],["2026-11-21T17:45:00.000-05:00",3.73],["2026-11-21T18:00:00.000-05:00",3.73],["2026-11-21T18:15:00.000-05:00",3.73],["2026-11-21T18:30:00.000-05:00",3.73],["2026-11-21T18:45:00.000-05:00",3.73],["2026-11-21T19:00:00.000-05:00",3.73],["2026-11-21T19:15:00.000-05:00",3.73],["2026-11-21T19:30:00.000-05:00",3.73],["2026-11-21T19:45:00.000-05:00",3.73],["2026-11-21T20:00:00.000-05:00",3.72],["2026-11-21T20:15:00.000-05:00",3.72],["2026-11-21T20:30:00.000-05:00",3.72],["2026-11-21T20:45:00.000-05:00",3.72],["2026-11-21T21:00:00.000-05:00",3.72],["2026-11-21T21:15:00.000-05:00",3.72],["2026-11-21T21:30:00.000-05:00",3.72],["2026-11-21T21:45:00.000-05:00",3.72],["2026-11-21T22:00:00.000-05:00",3.72],["2026-11-21T22:15:00.000-05:00",3.72],["2026-11-21T22:30:00.000-05:00",3.72],["2026-11-21T22:45:00.000-05:00",3.72],["2026-11-21T23:00:00.000-05:00",3.71],["2026-11-21T23:15:00.000-05:00",3.71],["2026-11-21T23:30:00.000-05:00",3.71],["2026-11-21T23:45:00.000-05:00",3.71],["2026-11-22T00:00:00.000-05:00",3.71],["2026-11-22T00:15:00.000-05:00",3.71],["2026-11-22T00:30:00.000-05:00",3.71],["2026-11-22T00:45:00.000-05:00",3.71],["2026-11-22T01:00:00.000-05:00",3.71],["2026-11-22T01:15:00.000-05:00",3.7],["2026-11-22T01:30:00.000-05:00",3.7],["2026-11-22T01:45:00.000-05:00",3.7],["2026-11-22T02:00:00.000-05:00",3.7],["2026-11-22T02:15:00.000-05:00",3.7],["2026-11-22T02:30:00.000-05:00",3.7],["2026-11-22T02:45:00.000-05:00",3.7],["2026-11-22T03:00:00.000-05:00",3.7],["2026-11-22T03:15:00.000-05:00",3.7],["2026-11-22T03:30:00.000-05:00",3.7],["2026-11-22T03:45:00.000-05:00",3.7],["2026-11-22T04:00:00.000-05:00",3.69],["2026-11-22T04:15:00.000-05:00",3.69],["2026-11-22T04:30:00.000-05:00",3.69],["2026-11-22T04:45:00.000-05:00",3.69],["2026-11-22T05:00:00.000-05:00",3.69],["2026-11-22T05:15:00.000-05:00",3.69],["2026-11-22T05:30:00.000-05:00",3.69],["2026-11-22T05:45:00.000-05:00",3.69],["2026-11-22T06:00:00.000-05:00",3.69],["2026-11-22T06:15:00.000-05:00",3.69],["2026-11-22T06:30:00.000-05:00",3.69],["2026-11-22T06:45:00.000-05:00",3.68],["2026-11-22T07:00:00.000-05:00",3.68],["2026-11-22T07:15:00.000-05:00",3.68],["2026-11-22T07:30:00.000-05:00",3.68],["2026-11-22T07:45:00.000-05:00",3.68],["2026-11-22T08:00:00.000-05:00",3.68],["2026-11-22T08:15:00.000-05:00",3.68],["2026-11-22T08:30:00.000-05:00",3.68],["2026-11-22T08:45:00.000-05:00",3.68],["2026-11-22T09:00:00.000-05:00",3.67],["2026-11-22T09:15:00.000-05:00",3.68],["2026-11-22T09:30:00.000-05:00",3.67],["2026-11-22T09:45:00.000-05:00",3.67],["2026-11-22T10:00:00.000-05:00",3.67],["2026-11-22T10:15:00.000-05:00",3.67],["2026-11-22T10:30:00.000-05:00",3.67],["2026-11-22T10:45:00.000-05:00",3.67],["2026-11-22T11:00:00.000-05:00",3.67],["2026-11-22T11:15:00.000-05:00",3.67],["2026-11-22T11:30:00.000-05:00",3.67],["2026-11-22T11:45:00.000-05:00",3.67],["2026-11-22T12:00:00.000-05:00",3.67],["2026-11-22T12:15:00.000-05:00",3.67],["2026-11-22T12:30:00.000-05:00",3.67],["2026-11-22T12:45:00.000-05:00",3.67],["2026-11-22T13:00:00.000-05:00",3.67]]}]};
+
+/* ============================================================
+   APP — state, network, rendering.
+   ============================================================ */
+(function () {
+  "use strict";
+
+  const SKEY = "hw-state-v1", CKEY = "hw-cache-v1";
+  const DEFAULT_IDS = SNAPSHOT.gauges.map((g) => g.id);
+
+  const state = load(SKEY, { checked: {}, custom: [], plan: {}, dark: false, big: false });
+  let cache = load(CKEY, null);            // {fetched, live, gauges, alerts}
+  let net = { online: navigator.onLine, lastLiveMs: (cache && cache.live) ? Date.parse(cache.fetched) : 0 };
+  let data = {
+    gauges: (cache && cache.gauges && cache.gauges.length ? cache.gauges : SNAPSHOT.gauges),
+    alerts: (cache && cache.alerts) || [],
+    fetched: (cache && cache.fetched) || SNAPSHOT.fetchedUTC,
+  };
+
+  function load(k, fb) {
+    try { const v = JSON.parse(localStorage.getItem(k)); return v === null || v === undefined ? fb : v; }
+    catch (e) { return fb; }
+  }
+  function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+  function saveState() { save(SKEY, state); }
+
+  const $ = (id) => document.getElementById(id);
+  const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+
+  function toast(msg) {
+    const t = $("toast"); t.textContent = msg; t.classList.add("show");
+    clearTimeout(toast._t); toast._t = setTimeout(() => t.classList.remove("show"), 2600);
+  }
+
+  /* ---------- clock + net pill ---------- */
+  function tick() {
+    const now = new Date();
+    $("clock").textContent = now.toISOString().slice(11, 19) + " UTC · " +
+      now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " local";
+  }
+  function netPill() {
+    const st = HW.netState(net.online, net.lastLiveMs, Date.now());
+    const p = $("netPill");
+    p.className = "pill " + (net.online ? st.cls : "off");
+    p.textContent = net.online ? st.label + (st.age ? " · " + st.age : "") : "OFFLINE · " + st.label;
+  }
+
+  /* ---------- fetching (fails soft offline) ---------- */
+  function withTimeout(url, ms) {
+    const c = new AbortController();
+    const t = setTimeout(() => c.abort(), ms);
+    return fetch(url, { signal: c.signal }).finally(() => clearTimeout(t));
+  }
+
+  function siteIds() { return DEFAULT_IDS.concat(state.custom).join(","); }
+
+  async function refresh() {
+    if (!navigator.onLine) { netPill(); renderAll(); return; }
+    const jobs = [
+      withTimeout("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteIds() + "&parameterCd=00065&period=P1D", 8000)
+        .then((r) => r.json()).then(HW.parseUSGS).catch(() => null),
+      withTimeout("https://api.weather.gov/alerts/active?area=NJ,NY", 8000)
+        .then((r) => r.json()).then(HW.parseNWS).catch(() => null),
+    ];
+    const [gauges, alerts] = await Promise.all(jobs);
+    let liveNow = false;
+    if (gauges && gauges.length) {
+      data.gauges = mergeGauges(gauges);
+      liveNow = true;
+    }
+    if (alerts) { data.alerts = alerts; liveNow = true; }
+    if (liveNow) {
+      data.fetched = new Date().toISOString();
+      net.lastLiveMs = Date.now();
+      cache = { fetched: data.fetched, live: true, gauges: data.gauges, alerts: data.alerts };
+      save(CKEY, cache);
+    }
+    netPill(); renderAll();
+  }
+
+  /* keep snapshot gauges that the live call didn't return (site down),
+     keep custom ordering: defaults then custom */
+  function mergeGauges(live) {
+    const map = {}; live.forEach((g) => { map[g.id] = g; });
+    const out = [];
+    DEFAULT_IDS.forEach((id) => { out.push(map[id] || byId(data.gauges, id) || byId(SNAPSHOT.gauges, id)); });
+    state.custom.forEach((id) => { if (map[id]) out.push(map[id]); });
+    return out.filter(Boolean);
+  }
+  function byId(list, id) { for (let i = 0; i < list.length; i++) if (String(list[i].id) === String(id)) return list[i]; return null; }
+
+  /* ---------- rendering ---------- */
+  function renderAll() { renderAlerts(); renderGauges(); renderKit(); renderPlan(); renderCard(); }
+
+  function renderAlerts() {
+    const box = $("alerts");
+    if (!data.alerts.length) {
+      box.innerHTML = '<div class="none">No active NWS alerts for New Jersey or New York.' +
+        '<span class="mono">Checked ' + esc(data.fetched.replace("T", " ").slice(0, 16)) + " UTC · " +
+        (net.lastLiveMs ? "live feed" : "embedded snapshot") + "</span></div>";
+      return;
+    }
+    box.innerHTML = data.alerts.map((a) => {
+      const cls = /flood (warning|emergency)/i.test(a.event) ? " flood-warning" : "";
+      return '<div class="alert' + cls + '">' +
+        '<span class="ev">' + esc(a.event) + "</span>" +
+        (a.headline ? '<span class="hd">' + esc(a.headline) + "</span>" : "") +
+        '<span class="mono">' + esc(a.areaDesc) + " · expires " + esc(String(a.expires).replace("T", " ").slice(0, 16)) + " UTC</span>" +
+        "</div>";
+    }).join("");
+  }
+
+  function renderGauges() {
+    const list = $("gaugeList");
+    const nowMs = Date.now();
+    const liveMode = net.online && net.lastLiveMs;
+    list.innerHTML = data.gauges.map((g) => {
+      const tr = HW.trend(g.series);
+      const path = HW.sparkline(g.series, 100, 30);
+      const age = HW.fmtAge(g.time, nowMs);
+      const arrow = tr.dir === "rising" ? "▲" : tr.dir === "falling" ? "▼" : "▬";
+      const trendTxt = (tr.dir === "flat" ? "flat" : arrow + " " + (tr.d > 0 ? "+" : "") + tr.d + " ft/24h");
+      const isCustom = state.custom.indexOf(String(g.id)) >= 0;
+      return '<div class="gauge">' +
+        '<div class="gname">' + esc(g.name) +
+        '<span class="sid">USGS ' + esc(g.id) + (isCustom ? ' · <button class="gdel" data-del="' + esc(g.id) + '" aria-label="Stop watching ' + esc(g.id) + '">unwatch</button>' : "") + "</span></div>" +
+        '<div class="gspark" aria-hidden="true">' +
+        (path ? '<svg width="100" height="30" viewBox="0 0 100 30" focusable="false"><path d="' + path + '" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>' : "") +
+        "</div>" +
+        '<div class="gval">' + esc(g.value) + '<span class="u">' + esc(g.unit) + "</span></div>" +
+        '<div class="gmeta"><span class="trend ' + tr.dir + '">' + trendTxt + "</span>" +
+        "<span>read " + esc(age) + "</span>" +
+        '<span class="mono">' + (liveMode ? "LIVE" : "CACHED") + "</span>" +
+        '<a href="https://waterdata.usgs.gov/nwis/uv?site_no=' + esc(g.id) + '" target="_blank" rel="noopener">usgs.gov ↗</a></div>' +
+        "</div>";
+    }).join("");
+    $("snapTime").textContent = "Snapshot " + esc(SNAPSHOT.fetchedUTC.replace("T", " ").slice(0, 16)) + " UTC · gauges update every 5–60 min.";
+    list.querySelectorAll("[data-del]").forEach((b) => {
+      b.addEventListener("click", (ev) => {
+        ev.preventDefault();
+        state.custom = state.custom.filter((id) => id !== b.getAttribute("data-del"));
+        data.gauges = data.gauges.filter((g) => String(g.id) !== b.getAttribute("data-del"));
+        saveState(); renderGauges(); toast("Gauge removed.");
+      });
+    });
+  }
+
+  function renderKit() {
+    const stats = HW.kitStats(KIT, state.checked);
+    $("kitNum").textContent = stats.done + " / " + stats.total;
+    $("kitFill").style.width = stats.pct + "%";
+    $("kitBar").setAttribute("aria-valuenow", stats.pct);
+    $("kitList").innerHTML = KIT.map((it) => {
+      const on = !!state.checked[it.id];
+      return '<li class="' + (on ? "done" : "") + '"><label>' +
+        '<input type="checkbox" data-kit="' + it.id + '"' + (on ? " checked" : "") + ">" +
+        '<span class="it">' + esc(it.label) + '<span class="cat">' + esc(it.cat) + " · " + esc(it.cite) + "</span></span></label></li>";
+    }).join("");
+    $("kitList").querySelectorAll("[data-kit]").forEach((inp) => {
+      inp.addEventListener("change", () => {
+        const key = inp.getAttribute("data-kit");
+        state.checked[key] = inp.checked;
+        saveState(); renderKit(); renderCard(); renderPlan();
+        const again = $("kitList").querySelector('[data-kit="' + key + '"]');
+        if (again) again.focus();
+      });
+    });
+  }
+
+  function currentPlan() {
+    return {
+      contactName: $("pName").value, contactPhone: $("pPhone").value,
+      meetingPlace: $("pMeet").value, needsHelp: $("pHelp").value,
+      neighbor1Name: $("n1n").value, neighbor1Phone: $("n1p").value,
+      shutoffWater: $("sWater").checked, shutoffGas: $("sGas").checked, shutoffElec: $("sElec").checked,
+    };
+  }
+
+  function renderPlan() {
+    const p = currentPlan();
+    const v = HW.validatePlan(p);
+    $("eName").textContent = v.errors.contactName || "";
+    $("ePhone").textContent = v.errors.contactPhone || "";
+    $("eN1p") && ($("eN1p").textContent = v.errors.neighbor1Phone || "");
+    const stats = HW.kitStats(KIT, state.checked);
+    const out = $("planOut");
+    if (!p.contactName && !p.contactPhone && !p.meetingPlace) {
+      out.innerHTML = "<h3>Your plan</h3><p>Fill in the contact person above — the plan and the pocket card build themselves as you type. Everything stays on this device.</p>";
+    } else {
+      out.innerHTML = "<h3>Your plan</h3>" +
+        "<p>Everyone calls <strong>" + esc(p.contactName || "—") + "</strong> at <span class=\"mono\">" + esc(p.contactPhone || "—") + "</span>.</p>" +
+        (p.meetingPlace ? "<p>If you can&rsquo;t go home, meet at <strong>" + esc(p.meetingPlace) + "</strong>.</p>" : "") +
+        (p.needsHelp ? "<p>Extra help needed: " + esc(p.needsHelp) + "</p>" : "") +
+        (p.neighbor1Name ? "<p>Check on <strong>" + esc(p.neighbor1Name) + "</strong>" + (p.neighbor1Phone ? " · <span class=\"mono\">" + esc(p.neighbor1Phone) + "</span>" : "") + ".</p>" : "") +
+        "<p>Shutoffs you know: <strong>" + esc(HW.shutoffList(p)) + "</strong>.</p>" +
+        "<p class=\"missing\">Kit: " + stats.done + " of " + stats.total + " ready — " + (stats.missing.length ? stats.missing.length + " still missing." : "complete.") + "</p>";
+    }
+  }
+
+  function renderCard() {
+    const p = currentPlan();
+    const stats = HW.kitStats(KIT, state.checked);
+    $("iceCard").innerHTML =
+      '<div class="h">HIGHWATER <span>IF IT FLOODS</span></div>' +
+      "<dl>" +
+      "<dt>Call</dt><dd>" + esc(p.contactName || "—") + "</dd>" +
+      "<dt>Phone</dt><dd>" + esc(p.contactPhone || "—") + "</dd>" +
+      (p.meetingPlace ? "<dt>Meet</dt><dd>" + esc(p.meetingPlace) + "</dd>" : "") +
+      (p.neighbor1Name ? "<dt>Check</dt><dd>" + esc(p.neighbor1Name) + (p.neighbor1Phone ? " · " + esc(p.neighbor1Phone) : "") + "</dd>" : "") +
+      "<dt>Kit</dt><dd>" + stats.done + "/" + stats.total + " ready</dd>" +
+      "<dt>Shutoffs</dt><dd>" + esc(HW.shutoffList(p)) + "</dd>" +
+      "</dl>" +
+      '<div class="call911">IN DANGER: CALL 911 · EVACUATE WHEN TOLD</div>' +
+      '<div class="gids">Watching: ' + esc(data.gauges.map((g) => g.id).join(" ")) + "<br>Turn Around, Don&rsquo;t Drown — NWS</div>";
+  }
+
+  /* ---------- actions ---------- */
+  $("addGauge").addEventListener("submit", async (ev) => {
+    ev.preventDefault();
+    const v = $("siteIn").value;
+    if (!HW.siteIdOK(v)) { toast("That doesn't look like a USGS site number (8–15 digits)."); return; }
+    const id = v.trim();
+    if (DEFAULT_IDS.indexOf(id) >= 0 || state.custom.indexOf(id) >= 0) { toast("Already watching that gauge."); return; }
+    toast("Fetching gauge " + id + "…");
+    try {
+      const r = await withTimeout("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + id + "&parameterCd=00065&period=P1D", 8000);
+      const g = HW.parseUSGS(await r.json());
+      if (!g.length) { toast("USGS returned no gage-height data for " + id + "."); return; }
+      state.custom.push(id);
+      data.gauges.push(g[0]);
+      saveState(); renderGauges(); renderCard();
+      $("siteIn").value = "";
+      toast("Now watching " + g[0].name + ".");
+    } catch (e) {
+      toast("Couldn't reach USGS for " + id + " — check the number or your connection.");
+    }
+  });
+
+  $("btnCopyKit").addEventListener("click", () => {
+    copyText(HW.kitMissingText(HW.kitStats(KIT, state.checked)), "Missing-items list copied.");
+  });
+  $("btnResetKit").addEventListener("click", () => {
+    if (confirm("Uncheck every kit item and start over?")) {
+      state.checked = {}; saveState(); renderKit(); renderCard(); renderPlan();
+    }
+  });
+  $("btnCopyPlan").addEventListener("click", () => {
+    const p = currentPlan();
+    const v = HW.validatePlan(p);
+    if (!v.ok) { toast(v.errors.contactPhone || v.errors.contactName); return; }
+    copyText(HW.planText(p, HW.kitStats(KIT, state.checked), data.gauges), "Plan copied as text.");
+  });
+  $("btnPrint").addEventListener("click", () => window.print());
+  $("btnPrint2").addEventListener("click", () => window.print());
+
+  function copyText(text, okMsg) {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => toast(okMsg)).catch(() => fallbackCopy(text, okMsg));
+    } else fallbackCopy(text, okMsg);
+  }
+  function fallbackCopy(text, okMsg) {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    try { document.execCommand("copy"); toast(okMsg); } catch (e) { toast("Copy failed — select the text instead."); }
+    document.body.removeChild(ta);
+  }
+
+  /* plan inputs: save on input, re-render live */
+  ["pName", "pPhone", "pMeet", "pHelp", "n1n", "n1p", "sWater", "sGas", "sElec"].forEach((id) => {
+    const el = $(id);
+    el.addEventListener("input", () => {
+      state.plan = currentPlan(); saveState();
+      renderPlan(); renderCard();
+    });
+  });
+
+  /* restore saved plan */
+  if (state.plan) {
+    ["pName", "pPhone", "pMeet", "pHelp", "n1n", "n1p"].forEach((id) => { if (state.plan[id]) $(id).value = state.plan[id]; });
+    $("sWater").checked = !!state.plan.shutoffWater;
+    $("sGas").checked = !!state.plan.shutoffGas;
+    $("sElec").checked = !!state.plan.shutoffElec;
+  }
+
+  /* ---------- toggles ---------- */
+  $("btnDark").addEventListener("click", () => {
+    state.dark = !state.dark; document.body.classList.toggle("dark", state.dark);
+    $("btnDark").setAttribute("aria-pressed", state.dark ? "true" : "false");
+    saveState();
+  });
+  $("btnText").addEventListener("click", () => {
+    state.big = !state.big; document.body.classList.toggle("big", state.big);
+    $("btnText").setAttribute("aria-pressed", state.big ? "true" : "false");
+    saveState();
+  });
+  if (state.dark) { document.body.classList.add("dark"); $("btnDark").setAttribute("aria-pressed", "true"); }
+  if (state.big) { document.body.classList.add("big"); $("btnText").setAttribute("aria-pressed", "true"); }
+
+  $("footBuild").textContent =
+    "Built at EvoHacks 2 (Nov 21–22, 2026). One HTML file, no server, no sign-in, no tracking. " +
+    "Engine unit-tested (tests.js) with pre-registered pass bars (PREREG.md). " +
+    "AI-assisted development disclosed, per event rules. Repo: " + location.href.replace(/[^/]*$/, "");
+
+  /* ---------- boot ---------- */
+  window.addEventListener("online", () => { net.online = true; netPill(); refresh(); });
+  window.addEventListener("offline", () => { net.online = false; netPill(); renderAll(); });
+  tick(); setInterval(tick, 1000);
+  netPill(); renderAll();
+  refresh();
+
+  if ("serviceWorker" in navigator && location.protocol.indexOf("http") === 0) {
+    navigator.serviceWorker.register("sw.js").catch(() => {});
+  }
+})();
+</script>
+</body>
+</html>

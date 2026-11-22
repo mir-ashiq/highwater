@@ -1,0 +1,13 @@
+{
+  "name": "HighWater — flood readiness that survives the flood",
+  "short_name": "HighWater",
+  "description": "Offline-first flood readiness: live river gauges and NWS alerts when online, a cached snapshot, 72-hour kit and household plan when nothing works.",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f4efe3",
+  "theme_color": "#f4efe3",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}

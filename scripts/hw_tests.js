@@ -217,6 +217,17 @@ t("W28 planText includes the transparent water target", txtW.includes("WATER TAR
 const txtW2 = HW.planText(plan, { done: 10, total: 27 }, snap.gauges, HW.waterTarget(0, 3, 1));
 t("W29 planText omits the water line when input invalid", !txtW2.includes("WATER TARGET"));
 
+/* W30–W31: plan restore mapping (found broken in real offline testing
+   2026-11-22: the form used element ids as plan keys, so a reload emptied
+   the form and the next keystroke overwrote the saved plan). */
+t("W30 PLAN_FIELDS maps every text input to a real plan key",
+  HW.PLAN_FIELDS.length === 6 &&
+  HW.PLAN_FIELDS.every((p) => Array.isArray(p) && p.length === 2 && /^[a-z]/.test(p[0]) && /^[a-z]/.test(p[1])) &&
+  new Set(HW.PLAN_FIELDS.map((p) => p[1])).size === 6 &&
+  HW.PLAN_FIELDS.every((p) => p[1] in plan));
+t("W31 app restores the form through the engine mapping (grep of shipped file)",
+  html.includes("HW.PLAN_FIELDS.forEach") && !html.includes("if (state.plan[id])"));
+
 console.log("\n" + pass + " passed, " + fail + " failed"
-  + "  (preregistered: " + counts.pre + "/36, regression: " + counts.reg + "/10, competitive upgrades: " + counts.comp + "/29)");
+  + "  (preregistered: " + counts.pre + "/36, regression: " + counts.reg + "/10, competitive upgrades: " + counts.comp + "/31)");
 process.exit(fail ? 1 : 0);

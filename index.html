@@ -642,6 +642,15 @@ const HW = (() => {
     return (nowMs - f) <= 30 * 60000 ? "LIVE" : "CACHED";
   }
 
+  /* Element-id → plan-key mapping for restoring the saved plan into the
+     form after a reload. One source of truth: the form ids and the plan
+     keys are different names, and mixing them up silently drops the plan
+     (found in real offline testing 2026-11-22). */
+  const PLAN_FIELDS = [
+    ["pName", "contactName"], ["pPhone", "contactPhone"], ["pMeet", "meetingPlace"],
+    ["pHelp", "needsHelp"], ["n1n", "neighbor1Name"], ["n1p", "neighbor1Phone"],
+  ];
+
   function siteIdOK(s) { return /^\d{8,15}$/.test(String(s || "").trim()); }
 
   /* ===== v1.2 competitive upgrades — pure functions, W-series tested ===== */
@@ -756,7 +765,7 @@ const HW = (() => {
     parseUSGS, parseNWS, trend, sparkline, fmtAge,
     kitStats, kitMissingText, validatePlan, planText, shutoffList,
     netState, siteIdOK, digits, validNWS, validUSGS, gaugeLabel,
-    waterTarget, whatChanged, briefing, gaugeRegion, inAlertCoverage, readySummary,
+    waterTarget, whatChanged, briefing, gaugeRegion, inAlertCoverage, readySummary, PLAN_FIELDS,
   };
 })();
 /*ENGINE:END*/
@@ -1213,9 +1222,10 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
     });
   });
 
-  /* restore saved plan */
+  /* restore saved plan — through the engine's id→key mapping, so the form
+     actually repopulates after an offline reload */
   if (state.plan) {
-    ["pName", "pPhone", "pMeet", "pHelp", "n1n", "n1p"].forEach((id) => { if (state.plan[id]) $(id).value = state.plan[id]; });
+    HW.PLAN_FIELDS.forEach((pair) => { if (state.plan[pair[1]]) $(pair[0]).value = state.plan[pair[1]]; });
     $("sWater").checked = !!state.plan.shutoffWater;
     $("sGas").checked = !!state.plan.shutoffGas;
     $("sElec").checked = !!state.plan.shutoffElec;

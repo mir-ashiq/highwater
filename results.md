@@ -37,3 +37,25 @@ and its hash are untouched and refer to the 36-test Run 1 only. `scripts/hw_test
 prints both counts separately ("preregistered suite: 36, regression suite: 10")
 so the claim stays honest by construction.
 
+**Run 3 — 2026-11-22 19:21 UTC (v1.2 competitive upgrades): 75 passed, 0 failed.**
+
+A third suite, W1–W29 (29 assertions), was added for the v1.2 competitive
+upgrades and executed for the first time with this run: **75/75**
+(preregistered 36/36, regression 10/10, competitive upgrades 29/29). It
+covers the transparent water planner (`waterTarget`: exact arithmetic,
+formula string, zero/invalid/one-person/large households, adjustable days),
+exact what-changed math (`whatChanged`: +2.10 over exactly 6 h, −0.84,
+flat under the 0.05 ft noise threshold, single-point and invalid-timestamp
+refusals, the snapshot's 4.86 → 4.82 comparison), the plain-language
+briefing (`briefing`: value + timestamp + change sentences, every line
+carrying a source, "could not verify" on a failed alert check — never "no
+alerts" — unknowns named as unknowns), geographic coverage
+(`gaugeRegion` / `inAlertCoverage`: NJ/NY inside, PA and unknown outside),
+the readiness summary (`readySummary`: flags, water target, "not safety"
+note), and the plan-text water line (included only when the input is
+valid). The app-layer script block was also syntax-checked with Node
+(`vm.Script`) and all new element ids verified present. First execution of
+the W suite: 29/29, no code changed after the run. The W suite is NOT
+claimed as part of Run 1 or Run 2.
+
+

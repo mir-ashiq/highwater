@@ -1,13 +1,14 @@
-/* HighWater service worker v2 — the app shell is served cache-first so the
+/* HighWater service worker v3 — the app shell is served cache-first so the
    page survives offline, and every same-origin response is revalidated in
    the background (stale-while-revalidate): a browser that already has the
    app installed gets the cached copy instantly, the fresh copy is fetched
    and written into the cache, and the NEXT load serves the new version.
-   The cache name is versioned, so v1 installs are evicted on activation
-   and every already-installed browser picks up this update. API calls
-   (USGS / NWS) are cross-origin and pass straight through; when they fail
-   offline the app itself shows cached data with honest labels. */
-const CACHE = 'highwater-v2';
+   The cache name is versioned, so v1/v2 installs are evicted on activation
+   and every already-installed browser picks up this update (v3: the
+   competitive-upgrade build — briefing, water planner, field mode). API
+   calls (USGS / NWS) are cross-origin and pass straight through; when they
+   fail offline the app itself shows cached data with honest labels. */
+const CACHE = 'highwater-v3';
 const SHELL = ['./', './index.html', './manifest.webmanifest', './icons/icon-192.png', './icons/icon-512.png'];
 
 self.addEventListener('install', (e) => {

@@ -44,6 +44,20 @@ things, you can defend every line.
    exactly the four labels. The pass bars were written and hashed first
    (PREREG.md); results.md records 36/36 on the first run.
 
+9. **v1.2 additions, same discipline:** `waterTarget(members, days, per)` is
+   one multiplication shown as a formula (ready.gov's 1 gallon per person
+   per day); invalid input returns an error, never a number.
+   `whatChanged(series, hours)` is subtraction between the newest reading
+   and the newest comparable earlier one, with the exact time gap — never a
+   probability. `briefing(gauge, alertCheck, planCheck)` turns those into
+   plain sentences, each carrying its source; a failed alert check says
+   "could not verify", unknowns say unknown. `gaugeRegion`/`inAlertCoverage`
+   read the state code off USGS names so a non-NJ/NY gauge is labeled
+   outside alert coverage. `readySummary` reports what exists and what is
+   missing, and states that completeness is not safety. The Field Mode view
+   renders only from localStorage and cached data — it makes zero network
+   calls by design.
+
 The single sentence version: *USGS and NWS data flows through pure
 functions into honest states, and everything you enter flows into
 localStorage and a print stylesheet — nothing else exists.*

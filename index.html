@@ -209,6 +209,46 @@ footer ul{margin:6px 0; padding-left:18px}
 }
 #toast.show{opacity:1; transform:translateX(-50%) translateY(0)}
 
+/* ---------- plain-language briefing ---------- */
+.brief{border:1.5px solid var(--ink); background:var(--paper2); margin:0 0 18px; padding:16px 18px}
+.brief h3{margin:0 0 10px; font:400 1.05rem var(--disp); letter-spacing:.01em}
+.brief ul{list-style:none; margin:0; padding:0; display:grid; gap:10px}
+.brief li{display:grid; grid-template-columns:1fr auto; gap:2px 12px; align-items:baseline}
+.brief li .t{line-height:1.45}
+.brief li .s{font-family:var(--mono); font-size:.62rem; letter-spacing:.08em; text-transform:uppercase; color:var(--ink55); white-space:nowrap}
+.evidence{margin:16px 0 22px; border:1.5px dashed var(--line2); padding:8px 14px}
+.evidence summary{cursor:pointer; font-weight:700; min-height:44px; display:flex; align-items:center}
+.evidence ul{margin:8px 0 8px; padding-left:20px; display:grid; gap:6px; max-width:70ch}
+.evidence li{line-height:1.45}
+
+/* ---------- water planner ---------- */
+.water{border:1.5px solid var(--line2); padding:16px 18px 14px; margin:0 0 22px; max-width:640px}
+.water h3{margin:0 0 10px; font:400 1.05rem var(--disp)}
+.wrow{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-end}
+.wrow label{font-weight:600; font-size:.88rem; display:block; margin:0 0 6px}
+.wrow input{width:84px; font:1.15rem var(--mono); padding:10px 12px; min-height:48px; border:2px solid var(--ink); background:var(--paper); color:var(--ink)}
+.wout{margin:14px 0 10px; font-size:1.05rem}
+.wout .f{display:block; font-family:var(--mono); font-weight:400; font-size:.82rem; color:var(--ink70); margin-top:4px; max-width:56ch}
+.wnote{font-size:.85rem; color:var(--ink70); margin:0; border-left:4px solid var(--line2); padding-left:12px; max-width:62ch}
+
+/* ---------- field mode ---------- */
+#field{padding-top:20px}
+body.field header.mast, body.field .banner, body.field #watch, body.field #kit,
+body.field #plan, body.field #card, body.field footer{display:none!important}
+#fieldBody{display:grid; gap:12px}
+.fcard{border:2px solid var(--ink); padding:14px 16px; background:var(--paper2)}
+.fcard h3{margin:0 0 8px; font:400 1rem var(--disp); letter-spacing:.02em}
+.fcard .big{font-size:1.15rem; font-weight:700; line-height:1.4; margin:2px 0}
+.fcard .sub{font-size:.82rem; color:var(--ink55); margin-top:6px; line-height:1.45}
+.f911{background:var(--redbg); color:#fff; text-align:center; padding:14px; font-weight:800; letter-spacing:.02em}
+body.dark .f911{color:#1a0505}
+
+/* ---------- high contrast ---------- */
+body.hc{
+  --paper:#fff; --paper2:#fff; --ink:#000; --ink70:#000; --ink55:#000;
+  --line:#000; --line2:#000; --live:#005c2e; --cached:#6b4300; --red:#8f001a;
+}
+
 /* ---------- mobile ---------- */
 @media (max-width:640px){
   .kitlist{grid-template-columns:1fr}
@@ -219,13 +259,16 @@ footer ul{margin:6px 0; padding-left:18px}
   .addg{grid-template-columns:1fr}
   .addg button{width:100%}
   .ice{max-width:100%}
+  .brief li{grid-template-columns:1fr}
+  .brief li .s{white-space:normal}
+  .wrow input{width:100%; flex:1}
 }
 
 /* ---------- print: the pocket card only ---------- */
 @media print{
   @page{margin:14mm}
   body{background:#fff; font-size:12pt}
-  header,.banner,#watch,#kit,#plan,footer,#toast,.tools{display:none!important}
+  header,.banner,#watch,#kit,#plan,#field,footer,#toast,.tools,.brief,.water,.evidence{display:none!important}
   #card{padding:0; border:none}
   #card h2,#card p.how,#btnPrint2{display:none!important}
   .ice{border:2px solid #000; max-width:100%}
@@ -243,6 +286,8 @@ footer ul{margin:6px 0; padding-left:18px}
         <h1>HIGHWATER</h1>
       </div>
       <div class="tools">
+        <button id="btnField" aria-pressed="false" title="Simplified offline view">Field</button>
+        <button id="btnHC" aria-pressed="false" title="High contrast">HC</button>
         <button id="btnDark" aria-pressed="false" title="Night colors">Night</button>
         <button id="btnText" aria-pressed="false" title="Larger text">A+</button>
       </div>
@@ -266,6 +311,8 @@ footer ul{margin:6px 0; padding-left:18px}
     <h2 id="hwatch"><span class="no" aria-hidden="true">01</span> Watch the water</h2>
     <p class="lede">Gauge heights come from the U.S. Geological Survey and active alerts from the National Weather Service. Region watched: <strong>New Jersey &amp; New York</strong>. When you&rsquo;re offline, everything below falls back to the last snapshot — with its age shown, never hidden.</p>
 
+    <div class="brief" id="brief" aria-live="polite"></div>
+
     <div class="alerts" id="alerts" aria-live="polite">
       <div class="none">Checking the National Weather Service&hellip;</div>
     </div>
@@ -280,12 +327,38 @@ footer ul{margin:6px 0; padding-left:18px}
     </form>
 
     <p class="src">Gauge heights: U.S. Geological Survey Instantaneous Values service (public domain). Alerts: NWS api.weather.gov. <span class="mono" id="snapTime"></span></p>
+
+    <details class="evidence">
+      <summary>What this data can — and cannot — tell you</summary>
+      <ul>
+        <li><strong>It can establish:</strong> the gage height each USGS sensor last reported, when that reading was measured, how much the level changed between two observations, and which NWS alerts were active for New Jersey &amp; New York at the last verified check.</li>
+        <li><strong>It cannot establish:</strong> whether your street will flood, any probability of flooding, conditions between gauge measurements, or conditions at places outside the watched gauges. Rivers can rise faster than sensors report.</li>
+        <li><strong>When something is missing:</strong> the app shows the last verified reading with its age, or says it could not check. It never substitutes a guess, never shows a blank as “no alerts”.</li>
+        <li><strong>Units &amp; math:</strong> heights in feet as USGS reports them; a change is the plain difference between two readings over their exact time gap — not a forecast.</li>
+      </ul>
+    </details>
   </section>
 
   <!-- ============ 02 KIT ============ -->
   <section id="kit" aria-labelledby="hkit">
     <h2 id="hkit"><span class="no" aria-hidden="true">02</span> The 72-hour kit</h2>
     <p class="lede">The National Weather Service tells every household to keep <q>enough food, water and medicine on hand at all times to last you at least 3 days</q> — because <q>oftentimes flash floods can occur within minutes and sometimes without any sign of rain.</q> Check what you have. Your progress is saved offline on this device.</p>
+
+    <div class="water" id="waterPlan">
+      <h3>Drinking-water target — the arithmetic, shown</h3>
+      <div class="wrow">
+        <div>
+          <label for="wMembers">People in the household</label>
+          <input id="wMembers" inputmode="numeric" type="number" min="1" max="30" value="3">
+        </div>
+        <div>
+          <label for="wDays">Days to cover</label>
+          <input id="wDays" inputmode="numeric" type="number" min="1" max="30" value="3">
+        </div>
+      </div>
+      <p class="wout" id="waterOut" aria-live="polite"></p>
+      <p class="wnote">Ready.gov: <q>Store at least 1 gallon of water per person per day</q> for emergencies, and plan for at least 3 days. The number above is exactly that arithmetic — adjust for infants, illness, heat and pets. It says nothing about flood likelihood.</p>
+    </div>
 
     <div class="kitbar">
       <span class="num mono" id="kitNum">0 / 0</span>
@@ -360,6 +433,14 @@ footer ul{margin:6px 0; padding-left:18px}
     <p class="how">Print this, fold it, put it in a wallet and a go-bag. It carries everything that matters when the phones do what floods make phones do. Works from a dead network because it&rsquo;s paper.</p>
     <div class="ice" id="iceCard"></div>
     <div class="row-actions"><button id="btnPrint2" class="primary">Print the card</button></div>
+  </section>
+
+  <!-- ============ FIELD MODE ============ -->
+  <section id="field" aria-labelledby="hfield" hidden>
+    <h2 id="hfield"><span class="no" aria-hidden="true">F</span> Field mode</h2>
+    <p class="lede">The phone-first view for when the power is out and the bars are gone: your people, your water, your essentials, and the saved readings — nothing else. Everything on this screen works from this device.</p>
+    <div id="fieldBody"></div>
+    <div class="row-actions"><button id="btnFieldExit">Exit field mode (Esc)</button></div>
   </section>
 
 </main>
@@ -498,7 +579,7 @@ const HW = (() => {
     return { ok: Object.keys(errors).length === 0, errors: errors };
   }
 
-  function planText(p, stats, gauges) {
+  function planText(p, stats, gauges, water) {
     const L = [];
     L.push("HIGHWATER — household flood plan");
     L.push("");
@@ -509,6 +590,7 @@ const HW = (() => {
     L.push("SHUTOFFS KNOWN: " + shutoffList(p).toUpperCase());
     L.push("");
     if (stats) L.push("KIT: " + stats.done + "/" + stats.total + " ready");
+    if (water && water.ok) L.push("WATER TARGET: " + water.gallons + " gallons (" + water.formula + ") - ready.gov");
     if (gauges && gauges.length) {
       L.push("WATCHING:");
       gauges.forEach((g) => L.push("  USGS " + g.id + " — " + g.name + " — " + g.value + " " + g.unit));
@@ -562,10 +644,119 @@ const HW = (() => {
 
   function siteIdOK(s) { return /^\d{8,15}$/.test(String(s || "").trim()); }
 
+  /* ===== v1.2 competitive upgrades — pure functions, W-series tested ===== */
+
+  /* Transparent household water target. Source: ready.gov/kit — "Store at
+     least 1 gallon of water per person per day"; ready.gov/water — prepare
+     for at least 3 days. Exact arithmetic, always shown as a formula. */
+  function waterTarget(members, days, perPerson) {
+    const m = Math.floor(Number(members));
+    const d = Math.floor(Number(days));
+    let p = Number(perPerson);
+    if (!isFinite(p) || p <= 0) p = 1;
+    if (!isFinite(m) || m < 1) return { ok: false, gallons: 0, formula: "", err: "Household size must be a whole number of at least 1." };
+    if (!isFinite(d) || d < 1) return { ok: false, gallons: 0, formula: "", err: "Days must be a whole number of at least 1." };
+    const gal = m * p * d;
+    return { ok: true, gallons: gal, members: m, days: d, perPerson: p,
+      formula: m + " people × " + p + " gallon" + (p === 1 ? "" : "s") + " per person per day × " + d + " day" + (d === 1 ? "" : "s") + " = " + gal + " gallons" };
+  }
+
+  /* What changed: the difference between the latest observation and the
+     newest comparable earlier one within the requested window (hours).
+     Plain arithmetic on two readings — never a flood probability. */
+  function whatChanged(series, hoursBack) {
+    if (!series || series.length < 2) return { ok: false, reason: "Not enough observations to compare." };
+    const last = series[series.length - 1];
+    const lastMs = Date.parse(last[0]);
+    if (isNaN(lastMs)) return { ok: false, reason: "Latest observation has no valid timestamp." };
+    const want = (hoursBack ? hoursBack : 6) * 3600000;
+    let earlier = null, bestGap = Infinity;
+    for (let i = series.length - 2; i >= 0; i--) {
+      const t = Date.parse(series[i][0]);
+      if (isNaN(t)) continue;
+      const gap = lastMs - t;
+      if (gap >= want) { earlier = series[i]; break; }
+      if (Math.abs(gap - want) < bestGap) { bestGap = Math.abs(gap - want); earlier = series[i]; }
+    }
+    if (!earlier) return { ok: false, reason: "No earlier observation to compare with." };
+    const eMs = Date.parse(earlier[0]);
+    if (isNaN(eMs)) return { ok: false, reason: "Earlier observation has no valid timestamp." };
+    const d = Math.round((last[1] - earlier[1]) * 100) / 100;
+    const gapH = Math.round(((lastMs - eMs) / 3600000) * 10) / 10;
+    return { ok: true, d: d, gapHours: gapH, from: earlier[1], to: last[1],
+      fromTime: earlier[0], toTime: last[0],
+      dir: d > 0.05 ? "rising" : (d < -0.05 ? "falling" : "flat") };
+  }
+
+  /* Plain-language briefing. Every sentence carries its source; unknowns
+     are named as unknowns; nothing beyond the data is ever asserted. */
+  function briefing(g, alertCheck, planCheck, nowMs) {
+    const L = [];
+    if (!g) {
+      L.push({ text: "No river gauge is being watched yet.", source: "—" });
+    } else {
+      L.push({ text: "The latest river reading at " + g.name + " was " + g.value + " " + (g.unit || "ft") + ".", source: "USGS gauge" });
+      const t = g.time ? Date.parse(g.time) : NaN;
+      L.push(isNaN(t)
+        ? { text: "The time of that observation is unknown — it is shown without a timestamp.", source: "USGS gauge" }
+        : { text: "That observation was recorded at " + new Date(t).toISOString().replace("T", " ").slice(0, 16) + " UTC (" + fmtAge(g.time, nowMs || t) + ").", source: "USGS gauge" });
+      const ch = whatChanged(g.series, 24);
+      L.push(ch.ok
+        ? { text: "Compared with the reading " + ch.gapHours + " h earlier (" + ch.from + " → " + ch.to + " " + (g.unit || "ft") + "), it changed " + (ch.d > 0 ? "+" : "") + ch.d + " " + (g.unit || "ft") + " (" + ch.dir + "). That is a difference between two readings, not a forecast.", source: "USGS 24-h series" }
+        : { text: "There are not enough comparable readings to say what changed.", source: "USGS 24-h series" });
+    }
+    const ac = alertCheck || { state: "none-yet" };
+    if (ac.state === "ok") {
+      const when = ac.checkedISO ? " (checked " + String(ac.checkedISO).replace("T", " ").slice(0, 16) + " UTC)" : "";
+      L.push(ac.alerts && ac.alerts.length
+        ? { text: "There " + (ac.alerts.length === 1 ? "is 1 active NWS alert" : "are " + ac.alerts.length + " active NWS alerts") + " for " + (ac.region || "the watched region") + ". The newest is “" + ac.alerts[0].event + "”. Details below." + when, source: "NWS alert feed" }
+        : { text: "There are no active NWS alerts for " + (ac.region || "the watched region") + "." + when, source: "NWS alert feed" });
+    } else if (ac.state === "fail") {
+      L.push({ text: "We could not verify current weather alerts. The last verified check was " + (ac.checkedISO ? String(ac.checkedISO).replace("T", " ").slice(0, 16) + " UTC" : "never") + ".", source: "NWS alert feed" });
+    } else {
+      L.push({ text: "Current weather alerts have not been verified on this device yet.", source: "NWS alert feed" });
+    }
+    const pc = planCheck || {};
+    L.push(pc.saved
+      ? { text: "Your household plan remains available offline (kit " + (pc.kitDone || 0) + "/" + (pc.kitTotal || 0) + " ready, updated " + (pc.updatedISO ? String(pc.updatedISO).replace("T", " ").slice(0, 16) + " UTC" : "unknown date") + ").", source: "saved on this device" }
+      : { text: "No household plan is saved on this device yet — fill in section 03 and it will keep working offline afterwards.", source: "saved on this device" });
+    return L;
+  }
+
+  /* Geographic honesty: USGS site names end with a state code. This build
+     fetches alerts for NJ + NY only, so a gauge outside those states is
+     labeled outside alert coverage — never presented as covered. */
+  function gaugeRegion(g) {
+    const m = String((g && g.name) || "").match(/\b([A-Z]{2})\s*$/);
+    return m ? m[1] : "";
+  }
+  function inAlertCoverage(g, states) {
+    const st = gaugeRegion(g);
+    return !!st && states.indexOf(st) >= 0;
+  }
+
+  /* Household readiness summary — deterministic; explicitly not a safety
+     claim. Reports what exists and what is still missing. */
+  function readySummary(p, stats, essentialMissing, water, updatedISO) {
+    p = p || {};
+    stats = stats || { done: 0, total: 0, pct: 0 };
+    return {
+      kitDone: stats.done, kitTotal: stats.total, kitPct: stats.pct,
+      essentialMissing: essentialMissing || [],
+      water: (water && water.ok) ? { gallons: water.gallons, formula: water.formula } : null,
+      contactMissing: !String(p.contactName || "").trim() || !digits(p.contactPhone),
+      meetingMissing: !String(p.meetingPlace || "").trim(),
+      needsHelp: !!String(p.needsHelp || "").trim(),
+      updatedISO: updatedISO || "",
+      note: "Completeness measures preparation, not safety. Follow official warnings.",
+    };
+  }
+
   return {
     parseUSGS, parseNWS, trend, sparkline, fmtAge,
     kitStats, kitMissingText, validatePlan, planText, shutoffList,
     netState, siteIdOK, digits, validNWS, validUSGS, gaugeLabel,
+    waterTarget, whatChanged, briefing, gaugeRegion, inAlertCoverage, readySummary,
   };
 })();
 /*ENGINE:END*/
@@ -616,8 +807,10 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
 
   const SKEY = "hw-state-v1", CKEY = "hw-cache-v3";
   const DEFAULT_IDS = SNAPSHOT.gauges.map((g) => g.id);
+  const ESSENTIAL = ["w1", "w2", "m1", "m2", "r1", "r2"];   // kit items counted as essentials in summaries
 
-  const state = load(SKEY, { checked: {}, custom: [], plan: {}, dark: false, big: false });
+  const state = load(SKEY, { checked: {}, custom: [], plan: {}, dark: false, big: false,
+    members: 3, days: 3, field: false, hc: false, updatedAt: "" });
   let cache = load(CKEY, null);            // {gaugeMs, alertMs, alertErr, gauges, alerts}
   let net = {
     online: navigator.onLine,
@@ -727,8 +920,77 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   }
   function byId(list, id) { for (let i = 0; i < list.length; i++) if (String(list[i].id) === String(id)) return list[i]; return null; }
 
+  /* ---------- briefing / water planner / field mode ---------- */
+  function renderBrief() {
+    const g = data.gauges[0];
+    const alertCheck = net.alertErr
+      ? { state: "fail", checkedISO: net.alertMs ? new Date(net.alertMs).toISOString() : "" }
+      : (net.alertMs
+        ? { state: "ok", alerts: data.alerts, region: "New Jersey or New York", checkedISO: new Date(net.alertMs).toISOString() }
+        : { state: "none-yet" });
+    const stats = HW.kitStats(KIT, state.checked);
+    const p = state.plan || {};
+    const planCheck = {
+      saved: !!(p.contactName || p.contactPhone || p.meetingPlace),
+      kitDone: stats.done, kitTotal: stats.total, updatedISO: state.updatedAt || "",
+    };
+    const lines = HW.briefing(g, alertCheck, planCheck, Date.now());
+    $("brief").innerHTML = "<h3>The brief — in plain language</h3><ul>" +
+      lines.map((l) => '<li><span class="t">' + esc(l.text) + '</span><span class="s">' + esc(l.source) + "</span></li>").join("") +
+      "</ul>";
+  }
+
+  function renderWater() {
+    const w = HW.waterTarget(state.members, state.days, 1);
+    const out = $("waterOut");
+    if (!w.ok) { out.innerHTML = esc(w.err); return; }
+    out.innerHTML = "<strong>" + w.gallons + " gallons</strong> of drinking water" +
+      '<span class="f">' + esc(w.formula) + " · ready.gov/kit</span>";
+  }
+
+  function setField(on) {
+    state.field = !!on; saveState();
+    document.body.classList.toggle("field", state.field);
+    $("btnField").setAttribute("aria-pressed", state.field ? "true" : "false");
+    if (state.field) {
+      $("field").removeAttribute("hidden");
+      renderField();
+      $("btnFieldExit").focus();
+    } else {
+      $("field").setAttribute("hidden", "");
+      $("btnField").focus();
+    }
+  }
+
+  function renderField() {
+    const p = state.plan || {};
+    const stats = HW.kitStats(KIT, state.checked);
+    const essMissing = stats.missing.filter((it) => ESSENTIAL.indexOf(it.id) >= 0).map((it) => it.label);
+    const w = HW.waterTarget(state.members, state.days, 1);
+    const nowMs = Date.now();
+    const checkedTxt = net.alertMs ? new Date(net.alertMs).toISOString().replace("T", " ").slice(0, 16) + " UTC" : "never";
+    const alertLine = net.alertErr
+      ? "Couldn't check alerts — last verified " + checkedTxt + "."
+      : (net.alertMs
+        ? (data.alerts.length ? data.alerts.length + " active NWS alert(s), checked " + checkedTxt + "." : "No active NWS alerts (NJ & NY), checked " + checkedTxt + ".")
+        : "Alerts not verified on this device yet.");
+    const tel = p.contactPhone ? String(p.contactPhone).replace(/[^\d+]/g, "") : "";
+    $("fieldBody").innerHTML =
+      '<div class="f911">IN DANGER: CALL 911 · EVACUATE WHEN TOLD</div>' +
+      '<div class="fcard"><h3>Contact</h3><p class="big">' + esc(p.contactName || "— not saved —") + "</p>" +
+        (tel ? '<p class="big mono"><a href="tel:' + esc(tel) + '">' + esc(p.contactPhone) + "</a></p>" : "") + "</div>" +
+      '<div class="fcard"><h3>Meet if you can&rsquo;t go home</h3><p class="big">' + esc(p.meetingPlace || "— not saved —") + "</p></div>" +
+      (p.needsHelp ? '<div class="fcard"><h3>Needs extra help</h3><p class="big">' + esc(p.needsHelp) + "</p></div>" : "") +
+      '<div class="fcard"><h3>Drinking water to store</h3><p class="big">' + (w.ok ? w.gallons + " gallons" : "—") + '</p><p class="sub">' + (w.ok ? esc(w.formula) + " · ready.gov" : esc(w.err)) + "</p></div>" +
+      '<div class="fcard"><h3>Kit essentials</h3><p class="big">' + (essMissing.length ? essMissing.length + " still missing" : "All set") + "</p>" +
+        (essMissing.length ? '<p class="sub">' + esc(essMissing.slice(0, 4).join(" · ")) + "</p>" : '<p class="sub">Kit ' + stats.done + "/" + stats.total + " ready</p>") + "</div>" +
+      '<div class="fcard"><h3>Rivers — saved readings</h3>' + data.gauges.slice(0, 6).map((g) =>
+        '<p class="big">' + esc(g.value) + " " + esc(g.unit) + "<span class='sub' style='display:block'>" + esc(g.name) + " · read " + esc(HW.fmtAge(g.time, nowMs)) + "</span></p>").join("") + "</div>" +
+      '<div class="fcard"><h3>Weather alerts</h3><p class="big" style="font-size:.95rem">' + esc(alertLine) + '</p><p class="sub">Coverage: New Jersey &amp; New York.</p></div>';
+  }
+
   /* ---------- rendering ---------- */
-  function renderAll() { renderAlerts(); renderGauges(); renderKit(); renderPlan(); renderCard(); }
+  function renderAll() { renderBrief(); renderAlerts(); renderGauges(); renderKit(); renderWater(); renderPlan(); renderCard(); if (state.field) renderField(); }
 
   function renderAlerts() {
     const box = $("alerts");
@@ -782,6 +1044,10 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
       const arrow = tr.dir === "rising" ? "▲" : tr.dir === "falling" ? "▼" : "▬";
       const trendTxt = (tr.dir === "flat" ? "flat" : arrow + " " + (tr.d > 0 ? "+" : "") + tr.d + " ft/24h");
       const isCustom = state.custom.indexOf(String(g.id)) >= 0;
+      const ch = HW.whatChanged(g.series, 24);
+      const chTxt = ch.ok ? "changed " + (ch.d > 0 ? "+" : "") + ch.d + " " + g.unit + " / " + ch.gapHours + " h" : "";
+      const covered = HW.inAlertCoverage(g, ["NJ", "NY"]);
+      const covTxt = covered ? "" : "outside NJ/NY — alerts above don't cover this site";
       return '<div class="gauge">' +
         '<div class="gname">' + esc(g.name) +
         '<span class="sid">USGS ' + esc(g.id) + (isCustom ? ' · <button class="gdel" data-del="' + esc(g.id) + '" aria-label="Stop watching ' + esc(g.id) + '">unwatch</button>' : "") + "</span></div>" +
@@ -790,6 +1056,8 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
         "</div>" +
         '<div class="gval">' + esc(g.value) + '<span class="u">' + esc(g.unit) + "</span></div>" +
         '<div class="gmeta"><span class="trend ' + tr.dir + '">' + trendTxt + "</span>" +
+        (chTxt ? '<span class="chg">' + esc(chTxt) + "</span>" : "") +
+        (covTxt ? '<span class="cov">' + esc(covTxt) + "</span>" : "") +
         "<span>read " + esc(age) + "</span>" +
         '<span class="mono">' + lab + "</span>" +
         '<a href="https://waterdata.usgs.gov/nwis/uv?site_no=' + esc(g.id) + '" target="_blank" rel="noopener">usgs.gov ↗</a></div>' +
@@ -821,7 +1089,8 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
       inp.addEventListener("change", () => {
         const key = inp.getAttribute("data-kit");
         state.checked[key] = inp.checked;
-        saveState(); renderKit(); renderCard(); renderPlan();
+        state.updatedAt = new Date().toISOString();
+        saveState(); renderKit(); renderCard(); renderPlan(); renderBrief(); if (state.field) renderField();
         const again = $("kitList").querySelector('[data-kit="' + key + '"]');
         if (again) again.focus();
       });
@@ -848,19 +1117,26 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
     if (!p.contactName && !p.contactPhone && !p.meetingPlace) {
       out.innerHTML = "<h3>Your plan</h3><p>Fill in the contact person above — the plan and the pocket card build themselves as you type. Everything stays on this device.</p>";
     } else {
+      const w = HW.waterTarget(state.members, state.days, 1);
+      const essMissing = stats.missing.filter((it) => ESSENTIAL.indexOf(it.id) >= 0).map((it) => it.label);
       out.innerHTML = "<h3>Your plan</h3>" +
         "<p>Everyone calls <strong>" + esc(p.contactName || "—") + "</strong> at <span class=\"mono\">" + esc(p.contactPhone || "—") + "</span>.</p>" +
         (p.meetingPlace ? "<p>If you can&rsquo;t go home, meet at <strong>" + esc(p.meetingPlace) + "</strong>.</p>" : "") +
         (p.needsHelp ? "<p>Extra help needed: " + esc(p.needsHelp) + "</p>" : "") +
         (p.neighbor1Name ? "<p>Check on <strong>" + esc(p.neighbor1Name) + "</strong>" + (p.neighbor1Phone ? " · <span class=\"mono\">" + esc(p.neighbor1Phone) + "</span>" : "") + ".</p>" : "") +
         "<p>Shutoffs you know: <strong>" + esc(HW.shutoffList(p)) + "</strong>.</p>" +
-        "<p class=\"missing\">Kit: " + stats.done + " of " + stats.total + " ready — " + (stats.missing.length ? stats.missing.length + " still missing." : "complete.") + "</p>";
+        "<p class=\"missing\">Kit: " + stats.done + " of " + stats.total + " ready — " + (stats.missing.length ? stats.missing.length + " still missing." : "complete.") + "</p>" +
+        (w.ok ? "<p>Water to store: <strong>" + w.gallons + " gallons</strong> <span class=\"mono\" style=\"font-size:.85rem;color:var(--ink55)\">(" + esc(w.formula) + " — ready.gov)</span>.</p>" : "") +
+        (essMissing.length ? "<p class=\"missing\">Essentials still missing: " + esc(essMissing.join("; ")) + ".</p>" : "") +
+        (state.updatedAt ? "<p style=\"font-size:.8rem;color:var(--ink55)\">Plan last updated " + esc(state.updatedAt.replace("T", " ").slice(0, 16)) + " UTC.</p>" : "") +
+        "<p style=\"font-size:.85rem;color:var(--ink55);max-width:62ch;margin:10px 0 0\">A completed checklist is preparation — it is not a safety certification. Follow official warnings.</p>";
     }
   }
 
   function renderCard() {
     const p = currentPlan();
     const stats = HW.kitStats(KIT, state.checked);
+    const w = HW.waterTarget(state.members, state.days, 1);
     $("iceCard").innerHTML =
       '<div class="h">HIGHWATER <span>IF IT FLOODS</span></div>' +
       "<dl>" +
@@ -868,6 +1144,7 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
       "<dt>Phone</dt><dd>" + esc(p.contactPhone || "—") + "</dd>" +
       (p.meetingPlace ? "<dt>Meet</dt><dd>" + esc(p.meetingPlace) + "</dd>" : "") +
       (p.neighbor1Name ? "<dt>Check</dt><dd>" + esc(p.neighbor1Name) + (p.neighbor1Phone ? " · " + esc(p.neighbor1Phone) : "") + "</dd>" : "") +
+      (w.ok ? "<dt>Water</dt><dd>" + w.gallons + " gal</dd>" : "") +
       "<dt>Kit</dt><dd>" + stats.done + "/" + stats.total + " ready</dd>" +
       "<dt>Shutoffs</dt><dd>" + esc(HW.shutoffList(p)) + "</dd>" +
       "</dl>" +
@@ -907,7 +1184,7 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
     const p = currentPlan();
     const v = HW.validatePlan(p);
     if (!v.ok) { toast(v.errors.contactPhone || v.errors.contactName); return; }
-    copyText(HW.planText(p, HW.kitStats(KIT, state.checked), data.gauges), "Plan copied as text.");
+    copyText(HW.planText(p, HW.kitStats(KIT, state.checked), data.gauges, HW.waterTarget(state.members, state.days, 1)), "Plan copied as text.");
   });
   $("btnPrint").addEventListener("click", () => window.print());
   $("btnPrint2").addEventListener("click", () => window.print());
@@ -929,8 +1206,10 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   ["pName", "pPhone", "pMeet", "pHelp", "n1n", "n1p", "sWater", "sGas", "sElec"].forEach((id) => {
     const el = $(id);
     el.addEventListener("input", () => {
-      state.plan = currentPlan(); saveState();
-      renderPlan(); renderCard();
+      state.plan = currentPlan();
+      state.updatedAt = new Date().toISOString();
+      saveState();
+      renderPlan(); renderCard(); renderBrief(); if (state.field) renderField();
     });
   });
 
@@ -943,6 +1222,23 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   }
 
   /* ---------- toggles ---------- */
+  $("btnField").addEventListener("click", () => setField(!document.body.classList.contains("field")));
+  $("btnFieldExit").addEventListener("click", () => setField(false));
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key === "Escape" && document.body.classList.contains("field")) setField(false);
+  });
+  $("btnHC").addEventListener("click", () => {
+    state.hc = !state.hc; document.body.classList.toggle("hc", state.hc);
+    $("btnHC").setAttribute("aria-pressed", state.hc ? "true" : "false");
+    saveState();
+  });
+  [["wMembers", "members"], ["wDays", "days"]].forEach((pair) => {
+    $(pair[0]).addEventListener("input", () => {
+      const n = parseInt($(pair[0]).value, 10);
+      if (!isNaN(n) && n >= 1 && n <= 30) { state[pair[1]] = n; saveState(); }
+      renderWater(); renderPlan(); renderCard(); if (state.field) renderField();
+    });
+  });
   $("btnDark").addEventListener("click", () => {
     state.dark = !state.dark; document.body.classList.toggle("dark", state.dark);
     $("btnDark").setAttribute("aria-pressed", state.dark ? "true" : "false");
@@ -955,9 +1251,16 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   });
   if (state.dark) { document.body.classList.add("dark"); $("btnDark").setAttribute("aria-pressed", "true"); }
   if (state.big) { document.body.classList.add("big"); $("btnText").setAttribute("aria-pressed", "true"); }
+  if (state.hc) { document.body.classList.add("hc"); $("btnHC").setAttribute("aria-pressed", "true"); }
+  if (state.field) {
+    document.body.classList.add("field"); $("btnField").setAttribute("aria-pressed", "true");
+    $("field").removeAttribute("hidden");
+  }
+  if (state.members) $("wMembers").value = state.members;
+  if (state.days) $("wDays").value = state.days;
 
   $("footBuild").textContent =
-    "HighWater v1.1.0. Built at EvoHacks 2 (Nov 21–22, 2026). One HTML file, no server, no sign-in, no tracking. " +
+    "HighWater v1.2.0. Built at EvoHacks 2 (Nov 21–22, 2026). One HTML file, no server, no sign-in, no tracking. " +
     "Engine unit-tested (scripts/hw_tests.js) with pre-registered pass bars (PREREG.md). " +
     "AI-assisted development disclosed, per event rules. Repo: " + location.href.replace(/[^/]*$/, "");
 

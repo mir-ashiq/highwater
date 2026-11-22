@@ -58,7 +58,7 @@ valid). The app-layer script block was also syntax-checked with Node
 the W suite: 29/29, no code changed after the run. The W suite is NOT
 claimed as part of Run 1 or Run 2.
 
-**Run 4 — 2026-11-22 19:37 UTC (v1.2.1, plan-restore fix): 77 passed, 0 failed.**
+**Run 4 — 2026-11-22 19:26 UTC (v1.2.1, plan-restore fix): 77 passed, 0 failed.**
 
 Live browser testing of the deployed site (agent-browser/Playwright,
 https://mir-ashiq.github.io/highwater/) then caught a real bug the engine

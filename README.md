@@ -71,8 +71,12 @@ public domain data).
   independent inspection, a 10-test regression suite (R1–R10) was added covering
   feed verification and per-gauge liveness: Run 2 is **46/46** (first execution
   45/46 — R2 caught a real gap, the validator was strengthened, re-run passed).
-  The v1.2 competitive upgrades added a 29-test suite (W1–W29): Run 3 is
-  **75/75**, recorded separately. Neither later suite is claimed as part of the
+  The v1.2 competitive upgrades added a 31-test suite (W1–W31): Runs 3–4 are
+  **75/75** then **77/77**, recorded separately. Live browser testing of the
+  deployed site then caught a real bug no engine test could see (the plan form
+  didn't repopulate after an offline reload, since v1.0) — fixed via the
+  `PLAN_FIELDS` mapping, verified with a genuine network-cut reload, and
+  covered by W30/W31. Neither later suite is claimed as part of the
   preregistered run.
 - Real data embedded at build time: snapshot taken 2026-11-22 18:23 UTC.
 
@@ -94,8 +98,8 @@ actual results and judge preferences decide that.
 | --- | --- | --- | --- | --- |
 | WaterMark | Environmental data provenance | Source-and-timestamp on every line: briefing, per-gauge `read X ago`, LIVE/CACHED per gauge, coverage labels for non-NJ/NY gauges, "can/cannot establish" panel | W14–W23 pass | No multi-feed environmental coverage beyond USGS+NWS |
 | Resili-Net | End-to-end humanitarian workflow | Household readiness journey in one page, no registration: contact → meeting place → needs → kit → water target → pocket card → print; persists offline | T4/T6/T7, W24–W29 pass | No multi-agency coordination features (by design) |
-| FindThem | Mobile emergency usefulness | Field Mode: 320px, contact/meeting/needs/water/essentials/saved readings with ages, cached alerts, zero network calls | engine tests + syntax/id checks pass | Not yet verified on a physical phone in a real offline reload |
-| Shelf Check | Published, reproducible tests | `scripts/hw_tests.js` in-repo, three separately recorded runs, pre-registered bars, honest failure history | 75/75 (36/10/29) | No CI pipeline; browser-level (DOM) tests not automated |
+| FindThem | Mobile emergency usefulness | Field Mode: 320px, contact/meeting/needs/water/essentials/saved readings with ages, cached alerts, zero network calls | engine tests + syntax/id checks pass; genuine offline reload verified in a desktop browser (network cut + reload, plan restored — screenshots/06) | Not yet verified on a physical phone |
+| Shelf Check | Published, reproducible tests | `scripts/hw_tests.js` in-repo, four separately recorded runs, pre-registered bars, honest failure history — including a live-testing bug catch | 77/77 (36/10/31) | No CI pipeline; browser-level (DOM) tests not automated |
 | PlainSpeak | Readable, verified language | Plain-language briefing with source on every sentence; unknowns named; failed checks say "could not verify" | W14–W21 pass | No second UI language; no human comprehension review yet |
 | Shortfall | Transparent deterministic arithmetic | Water target shown as a formula with source and limits; exact what-changed math with exact intervals | W1–W13 pass | No additional calculators beyond water |
 | Strobeproof | Accessibility engineering | Keyboard flow incl. Esc/field toggle, focus-visible, 44px targets, HC/night/large-text modes, reduced motion, semantic HTML + live regions | manual audit of the shipped markup | No NVDA/VoiceOver walkthrough or axe-core run yet — not claimed |

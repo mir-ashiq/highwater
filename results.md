@@ -58,4 +58,34 @@ valid). The app-layer script block was also syntax-checked with Node
 the W suite: 29/29, no code changed after the run. The W suite is NOT
 claimed as part of Run 1 or Run 2.
 
+**Run 4 — 2026-11-22 19:37 UTC (v1.2.1, plan-restore fix): 77 passed, 0 failed.**
+
+Live browser testing of the deployed site (agent-browser/Playwright,
+https://mir-ashiq.github.io/highwater/) then caught a real bug the engine
+suite could not see: after an offline reload the plan form came up empty
+even though the plan was correctly saved in localStorage — the restore loop
+indexed `state.plan` by element id (`pName`) while the saved plan stores
+plan keys (`contactName`), and the next keystroke would have overwritten
+the saved plan with the empty form. This bug existed since v1.0. Fixed by
+routing the restore through a single engine mapping, `PLAN_FIELDS`
+(id → plan key), with two new tests: W30 (mapping covers every text input
+with a real plan key) and W31 (the shipped file uses the mapping, not the
+old id-indexed loop). Re-run: **77/77** (preregistered 36/36, regression
+10/10, competitive upgrades 31/31).
+
+Browser verification performed on the deployed v1.2.1, recorded as executed:
+1. Fresh load: v1.2.1 shell, live USGS fetch working (VALLEY STREAM
+   observation timestamped 19:00 UTC, minutes old), NWS check verified
+   ("No active NWS alerts … Checked 2026-11-22 19:24 UTC"), 6 gauges with
+   per-gauge "changed X ft / Y h" lines, briefing + water planner rendering.
+2. Service-worker update: a browser holding the v1.1.0 install served the
+   cached old shell once, background-revalidated, and served v1.2.x on the
+   next load — the documented update strategy, observed working.
+3. Genuine offline reload (network cut, then reload): page served from the
+   service worker, net pill "OFFLINE · CACHED", 6 gauges from cached data
+   with ages, and — after the fix — the full typed plan (contact, phone,
+   meeting place, needs) restored into the form, rendered in the plan panel
+   and the pocket card. Screenshots: `screenshots/05-fieldmode.png`,
+   `screenshots/06-offline-reload.png`.
+
 

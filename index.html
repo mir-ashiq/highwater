@@ -101,6 +101,8 @@ h2::after{content:""; flex:1; border-top:1px solid var(--line2); transform:trans
 .alert .ev{font-weight:800; letter-spacing:.02em}
 .alert .hd{color:var(--ink70)}
 .alert.flood-warning,.alert.flood-emergency{border-left:6px solid var(--red); background:var(--amberbg)}
+.alert.err{border-left:6px solid var(--cached); background:var(--amberbg)}
+.alert.err .ev{color:var(--cached)}
 .alert .mono{font-size:.75rem; color:var(--ink55)}
 .alerts .none{padding:16px; color:var(--ink70)}
 .alerts .none .mono{display:block; margin-top:4px; font-size:.75rem}
@@ -409,7 +411,7 @@ const HW = (() => {
   }
 
   function parseNWS(json) {
-    const feats = (json && json.features) || [];
+    const feats = (json && Array.isArray(json.features)) ? json.features : [];
     return feats.map((f) => {
       const p = (f && f.properties) || {};
       return {
@@ -535,12 +537,35 @@ const HW = (() => {
     return { label: "CACHED", cls: "cached", age: age };
   }
 
+  /* A body only counts as data if it has the right shape: an HTTP error
+     page that happens to parse as JSON must never become "no alerts". */
+  function validNWS(json) {
+    return !!json && typeof json === "object" && Array.isArray(json.features) &&
+      json.features.every((f) => f == null || typeof f === "object");
+  }
+  function validUSGS(json) {
+    return !!json && typeof json === "object" &&
+      !!json.value && typeof json.value === "object" &&
+      Array.isArray(json.value.timeSeries);
+  }
+
+  /* Per-gauge liveness: a row is LIVE only if THIS gauge's data came out
+     of a successful fetch in the last 30 minutes. A fresh fetch for one
+     site must never relabel backfilled data for other sites. The
+     observation timestamp ("read X ago") is separate and older by design:
+     gauges report every 5–60 minutes. */
+  function gaugeLabel(g, nowMs, online) {
+    const f = g && g.fetchedMs;
+    if (!online || !f) return "CACHED";
+    return (nowMs - f) <= 30 * 60000 ? "LIVE" : "CACHED";
+  }
+
   function siteIdOK(s) { return /^\d{8,15}$/.test(String(s || "").trim()); }
 
   return {
     parseUSGS, parseNWS, trend, sparkline, fmtAge,
     kitStats, kitMissingText, validatePlan, planText, shutoffList,
-    netState, siteIdOK, digits,
+    netState, siteIdOK, digits, validNWS, validUSGS, gaugeLabel,
   };
 })();
 /*ENGINE:END*/
@@ -589,15 +614,16 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
 (function () {
   "use strict";
 
-  const SKEY = "hw-state-v1", CKEY = "hw-cache-v2";
+  const SKEY = "hw-state-v1", CKEY = "hw-cache-v3";
   const DEFAULT_IDS = SNAPSHOT.gauges.map((g) => g.id);
 
   const state = load(SKEY, { checked: {}, custom: [], plan: {}, dark: false, big: false });
-  let cache = load(CKEY, null);            // {gaugeMs, alertMs, gauges, alerts}
+  let cache = load(CKEY, null);            // {gaugeMs, alertMs, alertErr, gauges, alerts}
   let net = {
     online: navigator.onLine,
     gaugeMs: (cache && cache.gaugeMs) || 0,   // when USGS last gave us real data
-    alertMs: (cache && cache.alertMs) || 0,   // when NWS last answered
+    alertMs: (cache && cache.alertMs) || 0,   // when NWS last verified successfully
+    alertErr: !!(cache && cache.alertErr),    // last NWS attempt failed verification
   };
   let data = {
     gauges: (cache && cache.gauges && cache.gauges.length ? cache.gauges : SNAPSHOT.gauges),
@@ -642,40 +668,61 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
 
   function siteIds() { return DEFAULT_IDS.concat(state.custom).join(","); }
 
+  /* A feed only counts if HTTP said ok AND the body has the right shape.
+     Anything else returns null: never data, never "no alerts". */
+  async function fetchJSON(url, ms, validate) {
+    try {
+      const r = await withTimeout(url, ms);
+      if (!r.ok) return null;                 // HTTP error is not data
+      const body = await r.json();            // malformed JSON throws -> null
+      if (!validate(body)) return null;       // wrong shape is not data
+      return body;
+    } catch (e) { return null; }
+  }
+
   async function refresh() {
     if (!navigator.onLine) { netPill(); renderAll(); return; }
-    const jobs = [
-      withTimeout("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteIds() + "&parameterCd=00065&period=P1D", 8000)
-        .then((r) => r.json()).then(HW.parseUSGS).catch(() => null),
-      withTimeout("https://api.weather.gov/alerts/active?area=NJ,NY", 8000)
-        .then((r) => r.json()).then(HW.parseNWS).catch(() => null),
-    ];
-    const [gauges, alerts] = await Promise.all(jobs);
+    const [usgsBody, nwsBody] = await Promise.all([
+      fetchJSON("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + siteIds() + "&parameterCd=00065&period=P1D", 8000, HW.validUSGS),
+      fetchJSON("https://api.weather.gov/alerts/active?area=NJ,NY", 8000, HW.validNWS),
+    ]);
     let changed = false;
-    if (gauges && gauges.length) {          // USGS answered with real data
-      data.gauges = mergeGauges(gauges);
-      net.gaugeMs = Date.now();
-      changed = true;
+    if (usgsBody) {
+      const gauges = HW.parseUSGS(usgsBody);
+      if (gauges.length) {                    // verified feed that carried data
+        data.gauges = mergeGauges(gauges);    // stamps fetchedMs per gauge
+        net.gaugeMs = Date.now();
+        changed = true;
+      }
     }
-    if (alerts) {                            // NWS answered (even with zero alerts)
-      data.alerts = alerts;
+    if (nwsBody) {                            // verified (even with zero alerts)
+      data.alerts = HW.parseNWS(nwsBody);
       net.alertMs = Date.now();
+      net.alertErr = false;
       changed = true;
+    } else {
+      net.alertErr = true;                    // keep last verified alerts, say so
     }
-    if (changed) {
-      cache = { gaugeMs: net.gaugeMs, alertMs: net.alertMs, gauges: data.gauges, alerts: data.alerts };
+    if (changed || net.alertErr) {
+      cache = { gaugeMs: net.gaugeMs, alertMs: net.alertMs, alertErr: net.alertErr, gauges: data.gauges, alerts: data.alerts };
       save(CKEY, cache);
     }
     netPill(); renderAll();
   }
 
-  /* keep snapshot gauges that the live call didn't return (site down),
-     keep custom ordering: defaults then custom */
+  /* Merge a verified live response. Gauges in the response are stamped
+     fetchedMs = now (a fresh fetch). Gauges the response did NOT carry are
+     backfilled from the previous list, keeping their old fetchedMs — or no
+     stamp at all if they came from the embedded snapshot. Their observation
+     timestamps are preserved as-is. Custom gauges stay on the list even if
+     this response omits them. */
   function mergeGauges(live) {
-    const map = {}; live.forEach((g) => { map[g.id] = g; });
+    const now = Date.now();
+    const map = {};
+    live.forEach((g) => { g.fetchedMs = now; map[String(g.id)] = g; });
     const out = [];
     DEFAULT_IDS.forEach((id) => { out.push(map[id] || byId(data.gauges, id) || byId(SNAPSHOT.gauges, id)); });
-    state.custom.forEach((id) => { if (map[id]) out.push(map[id]); });
+    state.custom.forEach((id) => { const g = map[id] || byId(data.gauges, id); if (g) out.push(g); });
     return out.filter(Boolean);
   }
   function byId(list, id) { for (let i = 0; i < list.length; i++) if (String(list[i].id) === String(id)) return list[i]; return null; }
@@ -685,15 +732,36 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
 
   function renderAlerts() {
     const box = $("alerts");
-    if (!data.alerts.length) {
-      const when = net.alertMs
-        ? new Date(net.alertMs).toISOString().replace("T", " ").slice(0, 16) + " UTC · live feed"
-        : SNAPSHOT.fetchedUTC.replace("T", " ").slice(0, 16) + " UTC · embedded snapshot";
-      box.innerHTML = '<div class="none">No active NWS alerts for New Jersey or New York.' +
-        '<span class="mono">Checked ' + esc(when) + "</span></div>";
+    const lastOk = net.alertMs
+      ? new Date(net.alertMs).toISOString().replace("T", " ").slice(0, 16) + " UTC"
+      : SNAPSHOT.fetchedUTC.replace("T", " ").slice(0, 16) + " UTC (embedded snapshot)";
+    if (net.alertErr) {
+      /* the check itself failed — never report this as "no alerts" */
+      box.innerHTML = '<div class="alert err"><span class="ev">Unable to check current alerts.</span>' +
+        '<span class="mono">Last verified check: ' + esc(lastOk) +
+        (data.alerts.length ? " — showing those alerts below" : " — no verified alerts on this device") +
+        "</span></div>" + alertsHtml();
       return;
     }
-    box.innerHTML = data.alerts.map((a) => {
+    if (!net.alertMs) {
+      /* no verified check yet: say exactly that, never "live feed" */
+      box.innerHTML = !net.online
+        ? '<div class="none">Alerts can&rsquo;t be checked while you&rsquo;re offline — no verified alerts on this device.' +
+          '<span class="mono">Embedded snapshot taken ' + esc(SNAPSHOT.fetchedUTC.replace("T", " ").slice(0, 16)) + " UTC</span></div>"
+        : '<div class="none">Checking the National Weather Service&hellip;</div>';
+      return;
+    }
+    if (!data.alerts.length) {
+      box.innerHTML = '<div class="none">No active NWS alerts for New Jersey or New York.' +
+        '<span class="mono">Checked ' + esc(lastOk) +
+        (net.online ? " · live feed" : " · last verified check (offline)") + "</span></div>";
+      return;
+    }
+    box.innerHTML = alertsHtml();
+  }
+
+  function alertsHtml() {
+    return data.alerts.map((a) => {
       const cls = /flood (warning|emergency)/i.test(a.event) ? " flood-warning" : "";
       return '<div class="alert' + cls + '">' +
         '<span class="ev">' + esc(a.event) + "</span>" +
@@ -706,11 +774,11 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   function renderGauges() {
     const list = $("gaugeList");
     const nowMs = Date.now();
-    const liveMode = net.online && net.gaugeMs && (Date.now() - net.gaugeMs < 30 * 60000);
     list.innerHTML = data.gauges.map((g) => {
       const tr = HW.trend(g.series);
       const path = HW.sparkline(g.series, 100, 30);
       const age = HW.fmtAge(g.time, nowMs);
+      const lab = HW.gaugeLabel(g, nowMs, net.online);   // per gauge, not global
       const arrow = tr.dir === "rising" ? "▲" : tr.dir === "falling" ? "▼" : "▬";
       const trendTxt = (tr.dir === "flat" ? "flat" : arrow + " " + (tr.d > 0 ? "+" : "") + tr.d + " ft/24h");
       const isCustom = state.custom.indexOf(String(g.id)) >= 0;
@@ -723,7 +791,7 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
         '<div class="gval">' + esc(g.value) + '<span class="u">' + esc(g.unit) + "</span></div>" +
         '<div class="gmeta"><span class="trend ' + tr.dir + '">' + trendTxt + "</span>" +
         "<span>read " + esc(age) + "</span>" +
-        '<span class="mono">' + (liveMode ? "LIVE" : "CACHED") + "</span>" +
+        '<span class="mono">' + lab + "</span>" +
         '<a href="https://waterdata.usgs.gov/nwis/uv?site_no=' + esc(g.id) + '" target="_blank" rel="noopener">usgs.gov ↗</a></div>' +
         "</div>";
     }).join("");
@@ -815,18 +883,16 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
     const id = v.trim();
     if (DEFAULT_IDS.indexOf(id) >= 0 || state.custom.indexOf(id) >= 0) { toast("Already watching that gauge."); return; }
     toast("Fetching gauge " + id + "…");
-    try {
-      const r = await withTimeout("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + id + "&parameterCd=00065&period=P1D", 8000);
-      const g = HW.parseUSGS(await r.json());
-      if (!g.length) { toast("USGS returned no gage-height data for " + id + "."); return; }
-      state.custom.push(id);
-      data.gauges.push(g[0]);
-      saveState(); renderGauges(); renderCard();
-      $("siteIn").value = "";
-      toast("Now watching " + g[0].name + ".");
-    } catch (e) {
-      toast("Couldn't reach USGS for " + id + " — check the number or your connection.");
-    }
+    const body = await fetchJSON("https://waterservices.usgs.gov/nwis/iv/?format=json&sites=" + id + "&parameterCd=00065&period=P1D", 8000, HW.validUSGS);
+    if (!body) { toast("Couldn't reach USGS for " + id + " — check the number or your connection."); return; }
+    const g = HW.parseUSGS(body);
+    if (!g.length) { toast("USGS returned no gage-height data for " + id + "."); return; }
+    g[0].fetchedMs = Date.now();
+    state.custom.push(id);
+    data.gauges.push(g[0]);
+    saveState(); renderGauges(); renderCard();
+    $("siteIn").value = "";
+    toast("Now watching " + g[0].name + ".");
   });
 
   $("btnCopyKit").addEventListener("click", () => {
@@ -891,8 +957,8 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   if (state.big) { document.body.classList.add("big"); $("btnText").setAttribute("aria-pressed", "true"); }
 
   $("footBuild").textContent =
-    "Built at EvoHacks 2 (Nov 21–22, 2026). One HTML file, no server, no sign-in, no tracking. " +
-    "Engine unit-tested (tests.js) with pre-registered pass bars (PREREG.md). " +
+    "HighWater v1.1.0. Built at EvoHacks 2 (Nov 21–22, 2026). One HTML file, no server, no sign-in, no tracking. " +
+    "Engine unit-tested (scripts/hw_tests.js) with pre-registered pass bars (PREREG.md). " +
     "AI-assisted development disclosed, per event rules. Repo: " + location.href.replace(/[^/]*$/, "");
 
   /* ---------- boot ---------- */

@@ -589,12 +589,16 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
 (function () {
   "use strict";
 
-  const SKEY = "hw-state-v1", CKEY = "hw-cache-v1";
+  const SKEY = "hw-state-v1", CKEY = "hw-cache-v2";
   const DEFAULT_IDS = SNAPSHOT.gauges.map((g) => g.id);
 
   const state = load(SKEY, { checked: {}, custom: [], plan: {}, dark: false, big: false });
-  let cache = load(CKEY, null);            // {fetched, live, gauges, alerts}
-  let net = { online: navigator.onLine, lastLiveMs: (cache && cache.live) ? Date.parse(cache.fetched) : 0 };
+  let cache = load(CKEY, null);            // {gaugeMs, alertMs, gauges, alerts}
+  let net = {
+    online: navigator.onLine,
+    gaugeMs: (cache && cache.gaugeMs) || 0,   // when USGS last gave us real data
+    alertMs: (cache && cache.alertMs) || 0,   // when NWS last answered
+  };
   let data = {
     gauges: (cache && cache.gauges && cache.gauges.length ? cache.gauges : SNAPSHOT.gauges),
     alerts: (cache && cache.alerts) || [],
@@ -623,7 +627,7 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
       now.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) + " local";
   }
   function netPill() {
-    const st = HW.netState(net.online, net.lastLiveMs, Date.now());
+    const st = HW.netState(net.online, net.gaugeMs, Date.now());
     const p = $("netPill");
     p.className = "pill " + (net.online ? st.cls : "off");
     p.textContent = net.online ? st.label + (st.age ? " · " + st.age : "") : "OFFLINE · " + st.label;
@@ -647,16 +651,19 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
         .then((r) => r.json()).then(HW.parseNWS).catch(() => null),
     ];
     const [gauges, alerts] = await Promise.all(jobs);
-    let liveNow = false;
-    if (gauges && gauges.length) {
+    let changed = false;
+    if (gauges && gauges.length) {          // USGS answered with real data
       data.gauges = mergeGauges(gauges);
-      liveNow = true;
+      net.gaugeMs = Date.now();
+      changed = true;
     }
-    if (alerts) { data.alerts = alerts; liveNow = true; }
-    if (liveNow) {
-      data.fetched = new Date().toISOString();
-      net.lastLiveMs = Date.now();
-      cache = { fetched: data.fetched, live: true, gauges: data.gauges, alerts: data.alerts };
+    if (alerts) {                            // NWS answered (even with zero alerts)
+      data.alerts = alerts;
+      net.alertMs = Date.now();
+      changed = true;
+    }
+    if (changed) {
+      cache = { gaugeMs: net.gaugeMs, alertMs: net.alertMs, gauges: data.gauges, alerts: data.alerts };
       save(CKEY, cache);
     }
     netPill(); renderAll();
@@ -679,9 +686,11 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   function renderAlerts() {
     const box = $("alerts");
     if (!data.alerts.length) {
+      const when = net.alertMs
+        ? new Date(net.alertMs).toISOString().replace("T", " ").slice(0, 16) + " UTC · live feed"
+        : SNAPSHOT.fetchedUTC.replace("T", " ").slice(0, 16) + " UTC · embedded snapshot";
       box.innerHTML = '<div class="none">No active NWS alerts for New Jersey or New York.' +
-        '<span class="mono">Checked ' + esc(data.fetched.replace("T", " ").slice(0, 16)) + " UTC · " +
-        (net.lastLiveMs ? "live feed" : "embedded snapshot") + "</span></div>";
+        '<span class="mono">Checked ' + esc(when) + "</span></div>";
       return;
     }
     box.innerHTML = data.alerts.map((a) => {
@@ -697,7 +706,7 @@ const SNAPSHOT = {"fetchedUTC":"2026-11-22T18:23:32Z","gauges":[{"id":"01311500"
   function renderGauges() {
     const list = $("gaugeList");
     const nowMs = Date.now();
-    const liveMode = net.online && net.lastLiveMs;
+    const liveMode = net.online && net.gaugeMs && (Date.now() - net.gaugeMs < 30 * 60000);
     list.innerHTML = data.gauges.map((g) => {
       const tr = HW.trend(g.series);
       const path = HW.sparkline(g.series, 100, 30);
